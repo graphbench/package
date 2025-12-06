@@ -1,13 +1,15 @@
 # GraphBench: Next generation graph learning benchmarking
 
-This is the package associated with the paper GraphBench: Next generation graph learning benchmarking (https://arxiv.org/abs/2512.04475). It contains the code and tools necessary to load the datasets associated with the benchmark. 
+This is the package associated with the paper [GraphBench: Next generation graph learning benchmarking](https://arxiv.org/abs/2512.04475). 
+
+It contains the code and tools necessary to load the datasets associated with the benchmark. 
 GraphBench is a collection of benchmarking datasets across domains and tasks obtained from real world and synthetic applications. 
 
 ## Features
 
 GraphBench comes as a Python package with the following features: 
-                                                                
-|------------------------|-----------------------------------------------------------------------------|
+|        |           |                             
+| :------- | :------ |
 | Data Loading           | Efficiently loads graph datasets for benchmarking and experimentation across all domains and tasks.       |
 | Metric Evaluation      | Supports a wide range of evaluation metrics for graph learning tasks.        |
 | Automated Model Tuning | Integrates SMAC3 for automatic hyperparameter optimization of user models.   |
