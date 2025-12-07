@@ -57,6 +57,7 @@ dependencies = [
   "networkx",
   "gurobipy",
   "tqdm",
+  "swig",
 ]
 
 [project.optional-dependencies]
@@ -74,6 +75,7 @@ include = ["graphbench*"]
 homepage = "http://graphbench.io"
 repository = "https://github.com/graphbench/package"
 documentation = "https://graphbench.github.io/website/datasets"
+
 
 
 
