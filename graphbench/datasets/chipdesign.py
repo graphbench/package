@@ -30,7 +30,7 @@ import pandas as pd
 import requests
 import tarfile
 from tqdm import tqdm
-from helpers.download import _download_and_unpack
+from graphbench.helpers.download import _download_and_unpack
 # (i) helper functions
 
 # -----------------------------------------------------------------------------#

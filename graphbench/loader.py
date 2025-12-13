@@ -3,7 +3,7 @@
 import requests
 import os
 import csv
-from co_helpers.split_dataset import split_dataset
+from graphbench.co_helpers.split_dataset import split_dataset
 
 class Loader():
 
@@ -117,7 +117,7 @@ class Loader():
         
 
         if 'algoreas' in dataset_name:
-            from datasets.algoreas import AlgoReasDataset
+            from graphbench.datasets.algoreas import AlgoReasDataset
             # Special handling for sizegen datasets
             if 'sizegen' in dataset_name:
                 train_dataset, valid_dataset = None, None
@@ -131,32 +131,32 @@ class Loader():
                     test_dataset =  AlgoReasDataset(root=self.root, name=f"{dataset_name}_128", pre_transform=self.pre_transform, transform=self.transform, split="test", generate=self.generate)
 
         elif 'bluesky' in dataset_name:
-            from datasets.bluesky import BlueSkyDataset
+            from graphbench.datasets.bluesky import BlueSkyDataset
             train_dataset =  BlueSkyDataset(root=self.root, name=dataset_name, pre_transform=self.pre_transform, transform=self.transform, split="train", follower_subgraph=False, cleanup_raw=False,load_preprocessed=False)
             valid_dataset =  BlueSkyDataset(root=self.root, name=dataset_name, pre_transform=self.pre_transform, transform=self.transform, split="val")
             test_dataset =  BlueSkyDataset(root=self.root, name=dataset_name, pre_transform=self.pre_transform, transform=self.transform, split="test")
 
         elif 'chipdesign' in dataset_name:
-            from datasets.chipdesign import ChipDesignDataset
+            from graphbench.datasets.chipdesign import ChipDesignDataset
             train_dataset =  ChipDesignDataset(root=self.root, name=dataset_name, pre_transform=self.pre_transform, transform=self.transform, split="train")
             valid_dataset =  ChipDesignDataset(root=self.root, name=dataset_name, pre_transform=self.pre_transform, transform=self.transform, split="val")
             test_dataset =  ChipDesignDataset(root=self.root, name=dataset_name, pre_transform=self.pre_transform, transform=self.transform, split="test")
 
         elif 'weather' in dataset_name:
-            from datasets.weatherforecasting import WeatherforecastingDataset
+            from graphbench.datasets.weatherforecasting import WeatherforecastingDataset
             dataset =  WeatherforecastingDataset(root=self.root, name=dataset_name, pre_transform=self.pre_transform, transform=self.transform, split="train")
             train_dataset, valid_dataset, test_dataset = split_dataset(dataset, 0.8, 0.1, 0.1)
         elif 'co' in dataset_name:
-            from datasets.co import CODataset
+            from graphbench.datasets.co import CODataset
             dataset =  CODataset(root=self.root, name=dataset_name, pre_transform=self.pre_transform, transform=self.transform, split="train", generate=self.generate)
             train_dataset, valid_dataset, test_dataset = split_dataset(dataset, 0.7, 0.15, 0.15)
 
         elif 'sat' in dataset_name:
-            from datasets.sat import SATDataset 
+            from graphbench.datasets.sat import SATDataset
             dataset =  SATDataset(root=self.root, name=dataset_name, pre_transform=self.pre_transform, transform=self.transform, split="train", generate=self.generate, solver=self.solver, use_satzilla_features=self.use_satzilla_features)
             train_dataset, valid_dataset, test_dataset = split_dataset(dataset, 0.8, 0.1, 0.1)
         elif 'electronic_circuits' in dataset_name:
-            from datasets.electroniccircuits import ECDataset
+            from graphbench.datasets.electroniccircuits import ECDataset
             train_dataset =  ECDataset(root=self.root, name=dataset_name, pre_transform=self.pre_transform, transform=self.transform, split="train", generate=self.generate)
             valid_dataset =  ECDataset(root=self.root, name=dataset_name, pre_transform=self.pre_transform, transform=self.transform, split="val", generate=self.generate)
             test_dataset =  ECDataset(root=self.root, name=dataset_name, pre_transform=self.pre_transform, transform=self.transform, split="test", generate=self.generate)

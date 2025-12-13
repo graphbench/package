@@ -13,7 +13,7 @@ import os
 import shutil
 
 if TYPE_CHECKING:  # avoid circular import
-    from graphbench_submission.graphbench.datasets.bluesky import _SourceSpec
+    from graphbench.datasets.bluesky import _SourceSpec
 import lzma
 
 

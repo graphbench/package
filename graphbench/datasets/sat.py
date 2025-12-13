@@ -39,7 +39,7 @@ from sklearn.decomposition import PCA
 import gc
 from tqdm import tqdm
 import tempfile
-from helpers.download import _download_and_unpack
+from graphbench.helpers.download import _download_and_unpack
 
 # (0) Constants
 SMALL_N_VARS = 3_000

@@ -25,7 +25,7 @@ import requests
 #import xarray as xr
 #import gcsfs
 #from weatherforecasting_helpers.graph_dataset_creator import create_graph_dataset
-from helpers.download import _download_and_unpack
+from graphbench.helpers.download import _download_and_unpack
 # (i) helper functions
 
 # -----------------------------------------------------------------------------#

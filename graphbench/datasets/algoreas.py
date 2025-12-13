@@ -34,8 +34,8 @@ import numpy as np
 import pandas as pd
 import requests
 import tarfile
-from algoreas_helpers.algoreas_utils import generate_algoreas_data
-from helpers.download import _download_and_unpack
+from graphbench.algoreas_helpers.algoreas_utils import generate_algoreas_data
+from graphbench.helpers.download import _download_and_unpack
 # (i) helper functions
 
 # -----------------------------------------------------------------------------#

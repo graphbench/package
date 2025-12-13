@@ -18,7 +18,7 @@ from datetime import datetime, timedelta
 from torch_geometric.loader import DataLoader as PyGDataLoader
 from torch_geometric.nn import global_mean_pool
 import torch.nn as nn
-from helpers.download import _download_and_unpack
+from graphbench.helpers.download import _download_and_unpack
 
 TimeStamp: TypeAlias = Union[int, str]
 FEATURE_PT_PATH = "user_post_embs.pt" #raw files, slightly different name 

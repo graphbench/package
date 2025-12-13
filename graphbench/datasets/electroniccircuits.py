@@ -19,7 +19,7 @@ from torch_geometric.data import InMemoryDataset, Data
 import torch
 import tqdm
 import numpy as np
-from helpers.download import _download_and_unpack
+from graphbench.helpers.download import _download_and_unpack
 import json
 
 # (i) helper functions
