@@ -33,7 +33,7 @@ pip install -e .
 The package can be easily used to get selected datasets from the GraphBench tasks:
 
 ```
-import graphbench-lib as graphbench
+import graphbench
 Loader = graphbench.loader.Loader(root, dataset_name)
 datasets = Loader.load()
 ```
@@ -56,6 +56,8 @@ In order to use all datasets of a domain easily, each domain corresponds to one 
 | Electronic circuits | electronic_circuits |
 | Chip design | chipdesign |
 | Weather forecasting | weather |
+
+Note, that for algorithmic reasoning the download always includes all datasets for a given task. We plan to change this in the future. 
 
 For a full list of the datasets, see the accompanying [website](https://graphbench.io) or the ```datasets.csv``` file. The corresponding metrics can be found in the ```master.csv``` file.
 

@@ -1,6 +1,6 @@
 [project]
 name = "graphbench-lib"
-version = "0.1.1.3"
+version = "0.1.1.4"
 requires-python = ">=3.10"
 description = "Next-generation graph learning benchmarking."
 readme = "README.md"
@@ -69,7 +69,10 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["graphbench*"]
+include = ["graphbench*", "graphbench/*"]
+
+[tool.setuptools.package-data]
+graphbench = ["*.csv"]
 
 [project.urls]
 homepage = "http://graphbench.io"
