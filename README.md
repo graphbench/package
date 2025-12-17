@@ -18,7 +18,7 @@ GraphBench comes as a Python package with the following features:
 
 We recommend using Anaconda/Miniconda during setup. The installation process is done in two steps:
 
-1. Install [swig](https://github.com/swig/swig) via Anaconda/Miniconda: 
+1. Install [swig](https://github.com/swig/swig) via Anaconda/Miniconda (if using the optimization module): 
 ```conda install swig```
 
 2. GraphBench can then be easily installed using the python package manager pip:
@@ -39,14 +39,14 @@ The package can be easily used to get selected datasets from the GraphBench task
 
 ```
 import graphbench
-Loader = graphbench.loader.Loader(root, dataset_name)
+Loader = graphbench.Loader(root, dataset_name)
 datasets = Loader.load()
 ```
 
 Furthermore, standardized evaluation metrics can be obtained using the following methods:
 
 ```
-Evaluator = graphbench.evaluator.Evaluator(metric_name)
+Evaluator = graphbench.Evaluator(metric_name)
 metric_results = Evaluator.evaluate()
 ```
 
