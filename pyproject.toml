@@ -54,13 +54,12 @@ dependencies = [
   "pandas",
   "requests",
   "networkx",
-  "gurobipy",
   "tqdm",
   "scikit-learn",
 ]
 
 [project.optional-dependencies]
-tuning = ["smac", "swig"]
+tuning = ["smac"]
 
 [build-system]
 requires = ["setuptools", "wheel"]
@@ -77,5 +76,6 @@ graphbench = ["*.csv"]
 homepage = "http://graphbench.io"
 repository = "https://github.com/graphbench/package"
 documentation = "https://graphbench.github.io/website/datasets"
+
 
 
