@@ -16,7 +16,12 @@ GraphBench comes as a Python package with the following features:
 
 ## Installation
 
-GraphBench can be easily installed using the python package manager pip:
+We recommend using Anaconda/Miniconda during setup. The installation process is done in two steps:
+
+1. Install [swig](https://github.com/swig/swig) via Anaconda/Miniconda: 
+```conda install swig```
+
+2. GraphBench can then be easily installed using the python package manager pip:
 ```pip install graphbench-lib```
 
 Please make sure to update the installation of GraphBench before running the benchmark for best results. 
@@ -50,7 +55,7 @@ In order to use all datasets of a domain easily, each domain corresponds to one 
 | Domain   | Dataset_name           |                             
 | :------- | :------ |
 | Social media | socialnetwork |
-| Combinatorial Optimization | co |
+| Combinatorial optimization | co |
 | SAT solving | sat |
 | Algorithmic reasoning | algorithmic_reasoning_easy, algorithmic_reasoning_medium, algorithmic_reasoning_hard |
 | Electronic circuits | electronic_circuits |
