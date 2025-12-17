@@ -273,11 +273,11 @@ class BlueSkyDataset(InMemoryDataset):
         # process data if needed
         if self.processed_path.exists():
             logger.info(f"Loading cached processed data: {self.processed_path}")
-            self.data, self.slices = torch.load(self.processed_path, weights_only=False)
+            self.load(self.processed_path)
             return
 
         self._prepare()  # (i) downloads, unpacks, load data + (ii) timestep handle + (e) subgraph + collate
-        self.data, self.slices = torch.load(self.processed_path, weights_only=False)
+        self.load(self.processed_path)
         if self.cleanup_raw:
             self._cleanup()
 
@@ -422,9 +422,10 @@ class BlueSkyDataset(InMemoryDataset):
         Then filters edge_index, reindexes once, and returns aligned x, y.
         """
         if self.load_preprocessed:
-            keep_uids = torch.load(os.path.join(self.root, 'raw', f'keep_uids_{self.name}_{self.split}.pt'), weights_only=False)
-            x = torch.load(os.path.join(self._raw_feature_dir, f'x_{self.name}_{self.split}.pt'), weights_only=False)
-            y = torch.load(os.path.join(self._raw_feature_dir, f'y_{self.name}_{self.split}.pt'), weights_only=False)
+            self.file_name = self.name.split('_')[-1]
+            keep_uids = torch.load(os.path.join(self._raw_feature_dir, f'keep_uids_{self.file_name}_{self.split}.pt'), weights_only=False)
+            x = torch.load(os.path.join(self._raw_feature_dir, f'x_{self.file_name}_{self.split}.pt'), weights_only=False)
+            y = torch.load(os.path.join(self._raw_feature_dir, f'y_{self.file_name}_{self.split}.pt'), weights_only=False)
         else:
             # ---- Features (<= ts_feat_end)
             post_emb_dict: Dict[str, List[Tuple[TimeStamp, Tensor]]] = torch.load(

@@ -132,9 +132,9 @@ class Loader():
 
         elif 'bluesky' in dataset_name:
             from graphbench.datasets.bluesky import BlueSkyDataset
-            train_dataset =  BlueSkyDataset(root=self.root, name=dataset_name, pre_transform=self.pre_transform, transform=self.transform, split="train", follower_subgraph=False, cleanup_raw=False,load_preprocessed=False)
-            valid_dataset =  BlueSkyDataset(root=self.root, name=dataset_name, pre_transform=self.pre_transform, transform=self.transform, split="val")
-            test_dataset =  BlueSkyDataset(root=self.root, name=dataset_name, pre_transform=self.pre_transform, transform=self.transform, split="test")
+            train_dataset =  BlueSkyDataset(root=self.root, name=dataset_name, pre_transform=self.pre_transform, transform=self.transform, split="train", follower_subgraph=False, cleanup_raw=True,load_preprocessed=True)
+            valid_dataset =  BlueSkyDataset(root=self.root, name=dataset_name, pre_transform=self.pre_transform, transform=self.transform, split="val", follower_subgraph=False, cleanup_raw=True,load_preprocessed=True)
+            test_dataset =  BlueSkyDataset(root=self.root, name=dataset_name, pre_transform=self.pre_transform, transform=self.transform, split="test", follower_subgraph=False, cleanup_raw=True,load_preprocessed=True)
 
         elif 'chipdesign' in dataset_name:
             from graphbench.datasets.chipdesign import ChipDesignDataset
