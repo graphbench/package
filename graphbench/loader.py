@@ -147,7 +147,7 @@ class Loader():
             dataset =  WeatherforecastingDataset(root=self.root, name=dataset_name, pre_transform=self.pre_transform, transform=self.transform, split="train")
             train_dataset, valid_dataset, test_dataset = split_dataset(dataset, 0.8, 0.1, 0.1)
         elif 'co' in dataset_name:
-            from graphbench.datasets.co import CODataset
+            from graphbench.datasets.combinatorial_optimization import CODataset
             dataset =  CODataset(root=self.root, name=dataset_name, pre_transform=self.pre_transform, transform=self.transform, split="train", generate=self.generate)
             train_dataset, valid_dataset, test_dataset = split_dataset(dataset, 0.7, 0.15, 0.15)
 
