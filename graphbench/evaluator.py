@@ -48,8 +48,13 @@ class Evaluator():
         self.metric = self.csv_info.loc[self.name]['metric'].split(';')
 
 
-    def _check_input(self, y_true, y_pred):
-
+    def _check_input(self, y_pred, y_true=None, batch=None):
+        if batch is not None:
+            if isinstance(y_pred, np.ndarray):
+                y_pred = torch.from_numpy(y_pred)
+            if not isinstance(y_pred, torch.Tensor) and not isinstance(y_pred, np.ndarray):
+                raise ValueError(f"y_pred must be a torch.Tensor or numpy.ndarray. Got {type(y_pred)}.")
+            return y_pred, batch
         if isinstance(y_pred, np.ndarray):
             y_pred = torch.from_numpy(y_pred)
         if isinstance(y_true, np.ndarray):
@@ -88,16 +93,13 @@ class Evaluator():
             'MAE': self.get_mae(),
             'RMSE': self.get_rmse(),
             'RSE': self.get_rse(),
-
-            # The following metrics do not use `evaluate()` because they
-            # require non-tensor inputs (graph batches / circuit objects).
-            # They are provided as callables for consistency.
+            'ChipDesignScore': self.get_chip_design_score(),
+            'Weather_MSE': self.get_weather_mse(),
+            'ClosedGap': self.get_closed_gap(),
             'MisSize': self.get_mis_size(),
             'MaxCutSize': self.get_max_cut_size(),
             'NumColorsUsed': self.get_num_colors_used(),
-            'ClosedGap': self.get_closed_gap(),
-            'ChipDesignScore': self.get_chip_design_score(),
-            'Weather_MSE': self.get_weather_mse(),
+            
         }
         if metric_name in metric_dict:
             return metric_dict[metric_name]
@@ -118,14 +120,19 @@ class Evaluator():
             return metric_list
         
 
-    def evaluate(self, y_true, y_pred):
+    def evaluate(self, y_pred, y_true=None, batch=None):
         metric = self._get_metric()
-        y_true, y_pred = self._check_input(y_true, y_pred)
+        if batch is not None:
+            y_pred, batch = self._check_input(y_pred, y_true, batch)
+            if isinstance(metric, list):
+                return [met(y_pred, batch).item() for met in metric]
+            return metric(y_pred, batch).item()
+
+        y_true, y_pred = self._check_input(y_pred, y_true)
+
         if isinstance(metric, list):
-            result_list = [met(y_pred, y_true).item() for met in metric]
-            return result_list
-        else:
-            return metric(y_pred, y_true).item()
+            return [met(y_pred, y_true).item() for met in metric]
+        return metric(y_pred, y_true).item()
                 
     def get_f1(self):
         """Return a callable computing binary F1.
@@ -279,6 +286,7 @@ class Evaluator():
                 
             except Exception as e:
                 # Skip problematic samples 
+                print(f"Skipping sample due to error: {e}")
                 continue
         
         return (100.0 * total_score) / N if N > 0 else 0.0
@@ -493,10 +501,17 @@ class Evaluator():
         return sum(mae_list)/len(mae_list)
     
     def _rse(self, y_pred, y_true):
+        """Relative squared error (RSE) averaged over columns.
+
+        For each output dimension $i$:
+            $$\mathrm{RSE}_i = \frac{\mathbb{E}[(y_i-\hat{y}_i)^2]}{\mathbb{E}[(y_i-\mathbb{E}[y_i])^2]}$$
+
+        Returns NaN if the variance of `y_true[:, i]` is zero.
+        """
         rse_vals = []
         for i in range(y_true.shape[1]):
             num = torch.mean((y_true[:, i] - y_pred[:, i]) ** 2)
-            denom = torch.mean((y_true[:, i] - torch.mean(y_true[:, i])) ** 2)
+            denom = torch.var(y_true[:, i], unbiased=False)
             if torch.isclose(denom, torch.tensor(0.0, device=denom.device)):
                 rse_vals.append(torch.tensor(float("nan"), device=denom.device))
             else:
