@@ -121,6 +121,17 @@ class Evaluator():
         
 
     def evaluate(self, y_pred, y_true=None, batch=None):
+        """
+        Computes the selected metric(s) for the given predictions and true values.
+        Expects tensors of shape (N, K) where N is the number of samples (nodes or graphs) and K is either the number of classes (for multiclass tasks) or the number of tasks to be evaluated. 
+        If multiple batches are computed before metric evaluation, they should be concatenated along the first axis. 
+        In case of specialized metrics that require batch information (e.g., unsupervised tasks), the `batch` argument should be provided instead of y_true.
+        Returns a single scalar value if one metric is selected, or a list of scalar values if multiple metrics are selected.
+
+        :param y_pred: predicted values as a torch tensor or numpy array of shape (N,K)
+        :param y_true: true values as a torch tensor or numpy array of shape (N,K) or (N,1), defaults to None 
+        :param batch: optional batch information for unsupervised tasks, defaults to None
+        """
         metric = self._get_metric()
         if batch is not None:
             y_pred, batch = self._check_input(y_pred, y_true, batch)
