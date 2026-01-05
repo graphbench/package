@@ -192,7 +192,7 @@ class SATDataset(InMemoryDataset):
             self.load(self.processed_paths[0])
             return
 
-        #self._prepare()  # (i) downloads, unpacks, load data + (ii) timestep handle + (e) subgraph + collate
+        self._prepare()  # (i) downloads, unpacks, load data + (ii) timestep handle + (e) subgraph + collate
         if self.cleanup_raw:
             self._cleanup()
 
@@ -622,5 +622,5 @@ class SATDataset(InMemoryDataset):
         return ["data.pt"]
 
     def process(self):
-        self._prepare()
+        #self._prepare()
         return 

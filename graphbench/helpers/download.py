@@ -4,6 +4,7 @@ import gzip
 import lzma
 import shutil
 import tarfile
+import time
 import zipfile
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional, Union
@@ -39,17 +40,52 @@ def _download_and_unpack(source: _SourceSpec, raw_dir: Union[str, Path], process
     else:
         logger.info(f"Found existing download dir: {raw_dir}")
 
-def _stream_download(url: str, dest: Path, logger, chunk_size: int = 1 << 20, timeout: int = 60, ) -> None:
+def _stream_download(
+    url: str,
+    dest: Path,
+    logger,
+    chunk_size: int = 1 << 20,
+    timeout: int = 60,
+    max_retries: int = 5,
+    cooldown_seconds: int = 5,
+) -> None:
     dest.parent.mkdir(parents=True, exist_ok=True)
     logger.info(f"Downloading {url} -> {dest}")
     if url == "redacted":
-        return 
-    with requests.get(url, stream=True, timeout=timeout) as r:
-        r.raise_for_status()
-        with open(dest, "wb") as f:
-            for chunk in r.iter_content(chunk_size=chunk_size):
-                if chunk:
-                    f.write(chunk)
+        return
+
+    for attempt in range(1, max_retries + 1):
+        try:
+            with requests.get(url, stream=True, timeout=timeout) as r:
+                if r.status_code == 429:
+                    if attempt == max_retries:
+                        r.raise_for_status()
+                    logger.warning(
+                        "Received 429 (rate limited) on attempt %d/%d; retrying in %ds",
+                        attempt,
+                        max_retries,
+                        cooldown_seconds,
+                    )
+                    time.sleep(cooldown_seconds)
+                    continue
+
+                r.raise_for_status()
+                with open(dest, "wb") as f:
+                    for chunk in r.iter_content(chunk_size=chunk_size):
+                        if chunk:
+                            f.write(chunk)
+                return
+        except requests.RequestException as exc:  # includes timeouts and connection errors
+            if attempt == max_retries:
+                raise
+            logger.warning(
+                "Download attempt %d/%d failed (%s); retrying in %ds",
+                attempt,
+                max_retries,
+                exc,
+                cooldown_seconds,
+            )
+            time.sleep(cooldown_seconds)
 
 def _safe_extract_tar(path: Path, dest_dir: Path) -> None:
     """Extract tar.gz safely (prevents path traversal)."""
