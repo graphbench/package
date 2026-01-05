@@ -286,7 +286,7 @@ class Evaluator():
                 target_truth = target_sim.simulate_all_patterns()
                 
                 # Check equivalence and get score
-                sample_score = self.equivalence_score(
+                sample_score = self._equivalence_score(
                     pred_truth, target_truth,
                     pred_circuit.x.shape[0], 
                     target_circuit.x.shape[0] 

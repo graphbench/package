@@ -334,8 +334,9 @@ class BlueSkyDataset(InMemoryDataset):
             for data in data_list:
                 data.y = torch.tensor(ys)
 
-        data, slices = self.collate(data_list)
-        torch.save((data, slices), self.processed_path)
+        #data, slices = self.collate(data_list)
+        #torch.save((data, slices), self.processed_path)
+        self.save(data_list, self.processed_path)
         logger.info(f"Saved processed dataset -> {self.processed_path}")
 
 
