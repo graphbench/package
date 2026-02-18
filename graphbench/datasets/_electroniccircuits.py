@@ -22,7 +22,7 @@ import torch
 import tqdm
 from torch_geometric.data import Data, InMemoryDataset
 
-from graphbench.helpers.download import _download_and_unpack
+from graphbench._helpers import download_and_unpack
 
 
 # (i) helper functions
@@ -31,12 +31,12 @@ from graphbench.helpers.download import _download_and_unpack
 # (a) Utilities
 # -----------------------------------------------------------------------------#
 
-logger = logging.getLogger(__name__)
-if not logger.handlers:
+_logger = logging.getLogger(__name__)
+if not _logger.handlers:
     _h = logging.StreamHandler()
     _h.setFormatter(logging.Formatter("[%(levelname)s] %(message)s"))
-    logger.addHandler(_h)
-logger.setLevel(logging.INFO)
+    _logger.addHandler(_h)
+_logger.setLevel(logging.INFO)
 
 
 @dataclass(frozen=True)
@@ -69,37 +69,34 @@ class ECDataset(InMemoryDataset):
         - generate (bool): If True, attempt to generate dataset (not supported).
         - target_vout (float|None): Optional target value for vout normalization.
         - vout_norm_method (str): Normalization method for vout labels.
-
-       
         """
         #currently downloads everything at once for a single dataset. Up to the user to manually unpack it so far
         self.SOURCES: Dict[str, _SourceSpec] = {
-        "electronic_circuits_5_eff": _SourceSpec(
-            url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_ElectronicCircuits/resolve/main/ec_5.zip",
-            raw_folder="electronic_circuits_5_eff",
-        ), 
-        "electronic_circuits_5_vout": _SourceSpec(
-            url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_ElectronicCircuits/resolve/main/ec_5.zip",
-            raw_folder="electronic_circuits_5_vout",
-        ),
-        "electronic_circuits_7_eff": _SourceSpec(
-            url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_ElectronicCircuits/resolve/main/ec_7.zip",
-            raw_folder="electronic_circuit_7_eff",
-        ), 
-        "electronic_circuits_7_vout": _SourceSpec(
-            url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_ElectronicCircuits/resolve/main/ec_7.zip",
-            raw_folder="electronic_circuits_7_vout",
-        ),
-        "electronic_circuits_10_eff": _SourceSpec(
-            url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_ElectronicCircuits/resolve/main/ec_10.zip",
-            raw_folder="electronic_circuits_10_eff",
-        ), 
-        "electronic_circuits_10_vout": _SourceSpec(
-            url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_ElectronicCircuits/resolve/main/ec_10.zip",
-            raw_folder="electronic_circuits_10_vout",
-        ),
-
-    }
+            "electronic_circuits_5_eff": _SourceSpec(
+                url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_ElectronicCircuits/resolve/main/ec_5.zip",
+                raw_folder="electronic_circuits_5_eff",
+            ),
+            "electronic_circuits_5_vout": _SourceSpec(
+                url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_ElectronicCircuits/resolve/main/ec_5.zip",
+                raw_folder="electronic_circuits_5_vout",
+            ),
+            "electronic_circuits_7_eff": _SourceSpec(
+                url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_ElectronicCircuits/resolve/main/ec_7.zip",
+                raw_folder="electronic_circuit_7_eff",
+            ),
+            "electronic_circuits_7_vout": _SourceSpec(
+                url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_ElectronicCircuits/resolve/main/ec_7.zip",
+                raw_folder="electronic_circuits_7_vout",
+            ),
+            "electronic_circuits_10_eff": _SourceSpec(
+                url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_ElectronicCircuits/resolve/main/ec_10.zip",
+                raw_folder="electronic_circuits_10_eff",
+            ),
+            "electronic_circuits_10_vout": _SourceSpec(
+                url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_ElectronicCircuits/resolve/main/ec_10.zip",
+                raw_folder="electronic_circuits_10_vout",
+            ),
+        }
 
         self.root = root
         self.dataset_name = name.lower()
@@ -138,14 +135,14 @@ class ECDataset(InMemoryDataset):
         
 
     def _generate(self, pre_transform, transform) -> None:
-        pass 
+        raise NotImplementedError("Dataset generation not supported yet.")
 
     def _prepare(self) -> None:
         # (b) Download & unpack helpers
         if self.generate:
-            raise NotImplementedError("Dataset generation not supported yet.")
+            self._generate(None, None)
         else:
-            _download_and_unpack(source=self.source, raw_dir=self._raw_dir, processed_dir=self.processed_path, logger=logger)
+            download_and_unpack(source=self.source, raw_dir=self._raw_dir, processed_dir=self.processed_path, logger=_logger)
 
             train_json = self.load_json(os.path.join(self._raw_dir, f"dataset_{self.component_size}_train.json"))
             valid_json = self.load_json(os.path.join(self._raw_dir, f"dataset_{self.component_size}_valid.json"))
@@ -184,12 +181,12 @@ class ECDataset(InMemoryDataset):
                 data_list = [self.pre_transform(d) for d in tqdm(data_list, desc="pre_transform")]
 
             self.save(data_list, self.processed_path)
-            logger.info(f"Saved processed dataset -> {self.processed_path}")
+            _logger.info(f"Saved processed dataset -> {self.processed_path}")
 
 
     def _cleanup(self) -> None:
         if self._raw_dir.exists():
-            logger.info(f"Cleaning up: {self._raw_dir}")
+            _logger.info(f"Cleaning up: {self._raw_dir}")
             # remove only the dataset-specific temp folder
             for p in sorted(self._raw_dir.rglob("*"), reverse=True):
                 try:
@@ -241,7 +238,7 @@ class ECDataset(InMemoryDataset):
             ))
         return data_list
     
-    def get_label(self,target, datum, method='min-max', target_vout=None, statistics=None, y_range=None):
+    def get_label(self, target, datum, method='min-max', target_vout=None, statistics=None, y_range=None):
         if target == 'eff':
             y_val = datum['eff']
             y = torch.clamp(torch.tensor(y_val), y_range['min'], y_range['max'])

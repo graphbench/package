@@ -28,8 +28,8 @@ from typing import Callable, Dict, List, Optional, Union
 
 from torch_geometric.data import Data, InMemoryDataset
 
-from graphbench.algoreas_helpers.algoreas_utils import generate_algoreas_data
-from graphbench.helpers.download import _download_and_unpack
+from graphbench._algoreas_helpers import generate_algoreas_data
+from graphbench._helpers import download_and_unpack
 
 
 # (i) helper functions
@@ -38,12 +38,12 @@ from graphbench.helpers.download import _download_and_unpack
 # (a) Utilities
 # -----------------------------------------------------------------------------#
 
-logger = logging.getLogger(__name__)
-if not logger.handlers:
+_logger = logging.getLogger(__name__)
+if not _logger.handlers:
     _h = logging.StreamHandler()
     _h.setFormatter(logging.Formatter("[%(levelname)s] %(message)s"))
-    logger.addHandler(_h)
-logger.setLevel(logging.INFO)
+    _logger.addHandler(_h)
+_logger.setLevel(logging.INFO)
 
 
 @dataclass(frozen=True)
@@ -83,41 +83,38 @@ class AlgoReasDataset(InMemoryDataset):
         - load_preprocessed (bool): If True, load existing processed objects instead of regenerating.
 
         """
-        
-
-
 
         #currently downloads everything at once for a single dataset. Up to the user to manually unpack it so far
         self.SOURCES: Dict[str, _SourceSpec] = {
-        "topologicalorder": _SourceSpec(
-            url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_Algoreas/resolve/main/topologicalorder.tar.gz",
-            raw_folder="topological_order",
-        ),
-        "bipartitematching": _SourceSpec(
-            url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_Algoreas/resolve/main/bipartitematching.tar.gz",
-            raw_folder="bipartite_matching",
-        ),
-        "mst": _SourceSpec(
-            url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_Algoreas/resolve/main/mst.tar.gz",
-            raw_folder="mst",
-        ),
-        "steinertree": _SourceSpec(
-            url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_Algoreas/resolve/main/steinertree.tar.gz",
-            raw_folder="steiner_tree",
-        ),
-        "bridges": _SourceSpec(
-            url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_Algoreas/resolve/main/bridges.tar.gz",
-            raw_folder="bridges",
-        ),
-        "maxclique": _SourceSpec(
-            url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_Algoreas/resolve/main/maxclique.tar.gz",
-            raw_folder="max_clique",
-        ),
-        "flow": _SourceSpec(
-            url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_Algoreas/resolve/main/flow.tar.gz",
-            raw_folder="flow",
-        )
-    }
+            "topologicalorder": _SourceSpec(
+                url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_Algoreas/resolve/main/topologicalorder.tar.gz",
+                raw_folder="topological_order",
+            ),
+            "bipartitematching": _SourceSpec(
+                url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_Algoreas/resolve/main/bipartitematching.tar.gz",
+                raw_folder="bipartite_matching",
+            ),
+            "mst": _SourceSpec(
+                url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_Algoreas/resolve/main/mst.tar.gz",
+                raw_folder="mst",
+            ),
+            "steinertree": _SourceSpec(
+                url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_Algoreas/resolve/main/steinertree.tar.gz",
+                raw_folder="steiner_tree",
+            ),
+            "bridges": _SourceSpec(
+                url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_Algoreas/resolve/main/bridges.tar.gz",
+                raw_folder="bridges",
+            ),
+            "maxclique": _SourceSpec(
+                url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_Algoreas/resolve/main/maxclique.tar.gz",
+                raw_folder="max_clique",
+            ),
+            "flow": _SourceSpec(
+                url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_Algoreas/resolve/main/flow.tar.gz",
+                raw_folder="flow",
+            )
+        }
         self.name_temp = name.replace("_"," ").lower()
         self.dataset_name = self.name_temp.split(" ")[1]
         self.num_nodes = self.name_temp.split(" ")[3]
@@ -143,7 +140,7 @@ class AlgoReasDataset(InMemoryDataset):
 
         # process data if needed
         if self.processed_path.exists():
-            logger.info(f"Loading cached processed data: {self.processed_path}")
+            _logger.info(f"Loading cached processed data: {self.processed_path}")
             self.load(self.processed_path)
             return
 
@@ -174,8 +171,8 @@ class AlgoReasDataset(InMemoryDataset):
         else:
             # Download and unpack into the raw directory, and then load the
             # first matching processed file using `_load_algoreas_graphs`.
-            _download_and_unpack(
-                source=self.source, raw_dir=self._raw_dir, logger=logger, processed_dir=self.processed_path
+            download_and_unpack(
+                source=self.source, raw_dir=self._raw_dir, logger=_logger, processed_dir=self.processed_path
             )
 
             # The loader places the data into this InMemoryDataset instance
@@ -189,7 +186,7 @@ class AlgoReasDataset(InMemoryDataset):
             data_list = [self.pre_transform(d) for d in data_list]
 
         self.save(data_list, self.processed_path)
-        logger.info(f"Saved processed dataset -> {self.processed_path}")
+        _logger.info(f"Saved processed dataset -> {self.processed_path}")
 
 
     def _cleanup(self) -> None:
@@ -200,7 +197,7 @@ class AlgoReasDataset(InMemoryDataset):
         remain and this method will silently continue.
         """
         if self._raw_dir.exists():
-            logger.info(f"Cleaning up: {self._raw_dir}")
+            _logger.info(f"Cleaning up: {self._raw_dir}")
             # remove only the dataset-specific temp folder
             for p in sorted(self._raw_dir.rglob("*"), reverse=True):
                 try:
