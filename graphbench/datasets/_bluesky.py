@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import logging
 import os
-from dataclasses import dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Callable, Dict, List, Mapping, Optional, Sequence, Tuple, TypeAlias, Union
@@ -12,7 +11,7 @@ import torch
 from torch import Tensor
 from torch_geometric.data import Data, InMemoryDataset
 
-from graphbench._helpers import download_and_unpack
+from graphbench._helpers import download_and_unpack, SourceSpec
 
 
 TimeStamp: TypeAlias = Union[int, str]
@@ -149,11 +148,6 @@ def _add_edge_time(df: pd.DataFrame, format='%Y%m%d%H%M', index=2) -> Tuple[Tens
 # (d) Dataset
 # -----------------------------------------------------------------------------#
 
-@dataclass(frozen=True)
-class _SourceSpec:
-    url: str
-    raw_folder: str  # folder name inside tmp/ where data will appear
-
 class BlueSkyDataset(InMemoryDataset):
     """
     A compact PyG InMemoryDataset for BlueSky graphs.
@@ -187,32 +181,32 @@ class BlueSkyDataset(InMemoryDataset):
         Path to torch file: dict[user_id] -> list[(ts, likes, replies, reposts)].
     """
 
-    SOURCES_RAW: Dict[str, _SourceSpec] = {
+    SOURCES_RAW: Dict[str, SourceSpec] = {
 
-        "bluesky_quotes": _SourceSpec(
+        "bluesky_quotes": SourceSpec(
             url="https://zenodo.org/records/14669616/files/graphs.tar.gz",
             raw_folder="bluesky_graphs",
         ),
-        "bluesky_replies": _SourceSpec(
+        "bluesky_replies": SourceSpec(
             url="https://zenodo.org/records/14669616/files/graphs.tar.gz",
             raw_folder="bluesky_graphs",
         ),
-        "bluesky_reposts": _SourceSpec(
+        "bluesky_reposts": SourceSpec(
             url="https://zenodo.org/records/14669616/files/graphs.tar.gz",
             raw_folder="bluesky_graphs",
         ),
     }
 
-    SOURCES: Dict[str, _SourceSpec] = {
-        "bluesky_quotes": _SourceSpec(
+    SOURCES: Dict[str, SourceSpec] = {
+        "bluesky_quotes": SourceSpec(
             url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_SocialMedia/resolve/main/quotes.zip",
             raw_folder="bluesky_quotes",
         ),
-        "bluesky_replies": _SourceSpec(
+        "bluesky_replies": SourceSpec(
             url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_SocialMedia/resolve/main/replies.zip",
             raw_folder="bluesky_replies",
         ),
-        "bluesky_reposts": _SourceSpec(
+        "bluesky_reposts": SourceSpec(
             url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_SocialMedia/resolve/main/reposts.zip",
             raw_folder="bluesky_reposts",   
         ),

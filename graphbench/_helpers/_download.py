@@ -1,20 +1,22 @@
-from __future__ import annotations
-
+from dataclasses import dataclass
 import gzip
 import lzma
 import shutil
 import tarfile
 import zipfile
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional, Union
+from typing import Optional, Union
 
 import requests
 
-if TYPE_CHECKING:
-    from graphbench.datasets._bluesky import _SourceSpec
+
+@dataclass(frozen=True)
+class SourceSpec:
+    url: str
+    raw_folder: str  # folder name inside tmp/ where data will appear
 
 
-def download_and_unpack(source: _SourceSpec, raw_dir: Union[str, Path], processed_dir: Union[str, Path], logger) -> None:
+def download_and_unpack(source: SourceSpec, raw_dir: Union[str, Path], processed_dir: Union[str, Path], logger) -> None:
     raw_dir = Path(raw_dir)
     raw_dir.mkdir(parents=True, exist_ok=True)
     url = source.url
