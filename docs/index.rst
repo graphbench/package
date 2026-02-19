@@ -18,7 +18,31 @@ We also provide strong baselines with state-of-the-art message-passing and graph
 Code Example
 ------------
 
-**TODO**
+
+.. code:: python
+
+   import graphbench
+
+   model = # Your torch model
+   dataset_name = # Name of the task or list of tasks
+   pre_filter = # PyTorch Geometric filter matrix
+   pre_transform = # PyTorch Geometric-like transform during loading
+   transform = # PyTorch Geometric-like transform at computation time
+
+   # Setting up the components of graphbench
+   evaluator = graphbench.Evaluator(dataset_name)
+   optimizer = graphbench.Optimizer(optimization_args, training_method)
+   loader = graphbench.Loader(dataset_name, pre_filter, pre_transform, transform)
+
+   # Load a GraphBench dataset and get splits
+   dataset = loader.load()
+
+   # Optimize your model
+   opt_model = optimizer.optimize()
+
+   # Use graphbench evaluator with targets y_true and predictions y_pred
+   results = evaluator.evaluate(y_true, y_pred)
+
 
 
 
