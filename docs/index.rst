@@ -3,15 +3,36 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-GraphBench documentation
-========================
 
-Add your content using ``reStructuredText`` syntax. See the
-`reStructuredText <https://www.sphinx-doc.org/en/master/usage/restructuredtext/index.html>`_
-documentation for details.
+
+GraphBench: Next-generation graph learning benchmarking
+=======================================================
+
+We present *GraphBench*, a comprehensive graph learning benchmark across domains and prediction regimes.
+GraphBench standardizes evaluation with consistent splits, metrics, and out-of-distribution checks, and includes a
+unified hyperparameter tuning framework.
+We also provide strong baselines with state-of-the-art message-passing and graph transformer models to get you started.
+
+
+
+Code Example
+------------
+
+**TODO**
+
+
+
+Further Information
+-------------------
+
+* `Website <https://graphbench.github.io/website/>`__
+* `Information on the datasets <https://graphbench.github.io/website/datasets.html>`__
+* `Paper <https://arxiv.org/abs/2512.04475>`__
+
 
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Contents:
+   :maxdepth: 3
+   :caption: Contents
 
+   _api/graphbench.rst
