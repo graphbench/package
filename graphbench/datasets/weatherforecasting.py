@@ -50,6 +50,7 @@ class WeatherforecastingDataset(InMemoryDataset):
         root: Union[str, Path],
         transform: Optional[Callable] = None,
         pre_transform: Optional[Callable] = None,
+        pre_filter: Optional[Callable] = None,
         generate: Optional[bool] = False,
         size : Optional[int] = 64,
         # TODO: This should be removed in the future -- the user will download these files
@@ -78,7 +79,7 @@ class WeatherforecastingDataset(InMemoryDataset):
         self.weather_dir = Path(root) / "weatherforecasting"
         self._raw_dir = (self.weather_dir / self.SOURCES[self.name].raw_folder) / "raw"
         self.processed_path = self.weather_dir / self.SOURCES[self.name].raw_folder / "processed" / f"{self.name}.pt"
-        super().__init__(str(self.weather_dir), transform, pre_transform)
+        super().__init__(str(self.weather_dir), transform, pre_transform, pre_filter)
 
         # process data if needed
         if self.processed_path.exists():
@@ -127,6 +128,9 @@ class WeatherforecastingDataset(InMemoryDataset):
             loader = self._load_weather_graphs
             loader_kwargs = {}
             data_list = loader(**loader_kwargs)
+        # Apply pre_filter if provided
+        if self.pre_filter is not None:
+            data_list = [data for data in data_list if self.pre_filter(data)]
         if self.pre_transform is not None:
             data_list = [self.pre_transform(d) for d in data_list]
         self.save(data_list, self.processed_path)

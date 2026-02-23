@@ -58,6 +58,7 @@ class ChipDesignDataset(InMemoryDataset):
         root: Union[str, Path],
         transform: Optional[Callable] = None,
         pre_transform: Optional[Callable] = None,
+        pre_filter: Optional[Callable] = None,
         cleanup_raw: bool = False,  # TODO Disabling this for now since it leads to errors on my machine
         # TODO: This should be removed in the future -- the user will download these files
         load_preprocessed = False,):
@@ -88,7 +89,7 @@ class ChipDesignDataset(InMemoryDataset):
         self._raw_dir = (self.chipdesign_dir  / self.SOURCES[self.name].raw_folder / "raw")
         # Include time window & task in the processed filename to avoid collisions
         self.processed_path = self.chipdesign_dir / self.SOURCES[self.name].raw_folder / 'processed' / f"{self.name}_{split}.pt"
-        super().__init__(str(self.chipdesign_dir), transform, pre_transform)
+        super().__init__(str(self.chipdesign_dir), transform, pre_transform, pre_filter)
 
         """
         Initialize the `ChipDesignDataset`.
@@ -128,6 +129,10 @@ class ChipDesignDataset(InMemoryDataset):
 
         # Load and convert the raw files to PyG Data objects
         data_list = self._load_chipdesign_graphs()
+
+        # Apply pre_filter if provided
+        if self.pre_filter is not None:
+            data_list = [data for data in data_list if self.pre_filter(data)]
 
         # Apply optional pre_transform
         if self.pre_transform is not None:

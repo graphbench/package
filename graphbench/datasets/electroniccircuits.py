@@ -51,6 +51,7 @@ class ECDataset(InMemoryDataset):
         root: Union[str, Path],
         transform: Optional[Callable] = None,
         pre_transform: Optional[Callable] = None,
+        pre_filter: Optional[Callable] = None,
         generate: Optional[bool] = False,
         cleanup_raw: bool = True,
         target_vout : Optional[float] = None,
@@ -123,7 +124,7 @@ class ECDataset(InMemoryDataset):
         self._raw_dir = (self.ec_dir / self.SOURCES[self.dataset_name].raw_folder / "raw")
         # Include time window & task in the processed filename to avoid collisions
         self.processed_path = (self.ec_dir /self.SOURCES[self.dataset_name].raw_folder / "processed" / f"{self.dataset_name}_{self.split}.pt")
-        super().__init__(str(self.ec_dir), transform, pre_transform)
+        super().__init__(str(self.ec_dir), transform, pre_transform, pre_filter)
 
         # process data if needed
         if self.processed_path.exists():

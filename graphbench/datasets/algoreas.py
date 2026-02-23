@@ -59,6 +59,7 @@ class AlgoReasDataset(InMemoryDataset):
         root: Union[str, Path],
         transform: Optional[Callable] = None,
         pre_transform: Optional[Callable] = None,
+        pre_filter: Optional[Callable] = None,
         generate: Optional[bool] = False,
         num_nodes: Optional[int] = 16,
         difficulty: Optional[str] = "easy",
@@ -139,7 +140,7 @@ class AlgoReasDataset(InMemoryDataset):
         self.algoreas_dir = Path(root) / "algoreas"
         self._raw_dir = (self.algoreas_dir  / self.SOURCES[self.dataset_name].raw_folder / "raw")
         self.processed_path = self.algoreas_dir / self.SOURCES[self.dataset_name].raw_folder / "processed" / f"{self.dataset_name}_{self.num_nodes}_{self.difficulty}_{split}.pt"
-        super().__init__(str(self.algoreas_dir), transform, pre_transform)
+        super().__init__(str(self.algoreas_dir), transform, pre_transform, pre_filter)
 
         # process data if needed
         if self.processed_path.exists():
@@ -183,6 +184,10 @@ class AlgoReasDataset(InMemoryDataset):
 
             # After loading into `self`, expose all elements as a list
             data_list = [self.get(i) for i in range(len(self))]
+
+        # Apply pre_filter if provided
+        if self.pre_filter is not None:
+            data_list = [data for data in data_list if self.pre_filter(data)]
 
         # Apply pre_transform if provided and save the processed cache
         if self.pre_transform is not None:

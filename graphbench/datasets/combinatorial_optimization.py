@@ -55,6 +55,7 @@ class CODataset(InMemoryDataset):
         root: Union[str, Path],
         transform: Optional[Callable] = None,
         pre_transform: Optional[Callable] = None,
+        pre_filter: Optional[Callable] = None,
         target: Optional[str] = None,
         generate: Optional[bool] = False,
         cleanup_raw: bool = True,
@@ -131,7 +132,7 @@ class CODataset(InMemoryDataset):
         self._raw_dir = (self.algoreas_dir /  self.SOURCES[self.dataset_name].raw_folder / "raw")
         # Include time window & task in the processed filename to avoid collisions
         self.processed_path = self.algoreas_dir /self.SOURCES[self.dataset_name].raw_folder/"processed"/ "data.pt"
-        super().__init__(str(self.algoreas_dir), transform, pre_transform)
+        super().__init__(str(self.algoreas_dir), transform, pre_transform, pre_filter)
 
         # process data if needed
         if self.processed_path.exists():
