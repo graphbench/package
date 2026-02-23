@@ -237,6 +237,7 @@ class BlueSkyDataset(InMemoryDataset):
         root: Union[str, Path],
         transform: Optional[Callable] = None,
         pre_transform: Optional[Callable] = None,
+        pre_filter: Optional[Callable] = None,
         follower_subgraph: bool = False, #not used for now 
         cleanup_raw: bool = True,
         # TODO: This should be removed in the future -- the user will download these files
@@ -263,7 +264,7 @@ class BlueSkyDataset(InMemoryDataset):
         subflag = ""
         self._raw_feature_dir = (self.bluesky_dir / self.SOURCES[self.name].raw_folder / "raw")
         self.processed_path = self.bluesky_dir / self.SOURCES[self.name].raw_folder / "processed" / f"{self.name}{subflag}_{split}.pt"
-        super().__init__(str(self.bluesky_dir), transform, pre_transform)
+        super().__init__(str(self.bluesky_dir), transform, pre_transform, pre_filter)
 
         self.feature_file_name = Path(feature_file_name)
         self.empty_file_name = Path(empty_emb_file_name)
@@ -319,7 +320,9 @@ class BlueSkyDataset(InMemoryDataset):
 
             # (e) optional followers subgraph
             
-
+            # Apply pre_filter if provided
+            if self.pre_filter is not None:
+                data_list = [data for data in data_list if self.pre_filter(data)]
             # collate & save
             if self.pre_transform:
                 data_list = [self.pre_transform(d) for d in data_list]

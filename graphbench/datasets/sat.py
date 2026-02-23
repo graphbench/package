@@ -71,6 +71,7 @@ class SATDataset(InMemoryDataset):
         root: Union[str, Path],
         transform: Optional[Callable] = None,
         pre_transform: Optional[Callable] = None,
+        pre_filter: Optional[Callable] = None,
         generate: Optional[bool] = False,
         use_satzilla_features: Optional[bool] =False,
         cleanup_raw: bool = True,
@@ -185,7 +186,7 @@ class SATDataset(InMemoryDataset):
         self._raw_dir = (self.sat_dir / self.SOURCES[self.name].raw_folder / "raw" )
         # Include time window & task in the processed filename to avoid collisions
         self.processed_path = self.sat_dir / self.SOURCES[self.name].raw_folder / "processed"
-        super().__init__(str(self.sat_dir), transform, pre_transform)
+        super().__init__(str(self.sat_dir), transform, pre_transform, pre_filter)
 
         # process data if needed
         if self.processed_path.exists():
@@ -575,6 +576,8 @@ class SATDataset(InMemoryDataset):
             loader_kwargs = {}
             loader(**loader_kwargs)
             data_list = [self.get(i) for i in range(len(self))]
+            if self.pre_filter is not None:
+                data_list = [data for data in data_list if self.pre_filter(data)]
             if self.pre_transform is not None:
                 data_list = [self.pre_transform(d) for d in data_list]
         self.save(data_list, self.processed_paths[0])
