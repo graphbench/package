@@ -130,7 +130,7 @@ class CODataset(InMemoryDataset):
         
         self._raw_dir = (self.algoreas_dir /  self.SOURCES[self.dataset_name].raw_folder / "raw")
         # Include time window & task in the processed filename to avoid collisions
-        self.processed_path = self.algoreas_dir /self.SOURCES[self.dataset_name].raw_folder/"processed"/ "data.pt"
+        self.processed_path = self.algoreas_dir /self.SOURCES[self.dataset_name].raw_folder / "processed"/ "data.pt"
         super().__init__(str(self.algoreas_dir), transform, pre_transform)
 
         # process data if needed
@@ -188,12 +188,10 @@ class CODataset(InMemoryDataset):
             self.save(data, self.processed_path)
             logger.info(f"Saved processed dataset -> {self.processed_path}")
         else:
-            _download_and_unpack(source=self.source, raw_dir=self._raw_dir, processed_dir=self.processed_path, logger=logger)
+            _download_and_unpack(source=self.source, raw_dir=self._raw_dir, processed_dir=self.processed_path.parent, logger=logger)
 
-            loader = self._load_co_graphs
-            loader_kwargs = {}
-            loader(**loader_kwargs)
-        
+            self.load(self.processed_path)
+
             # collate & save
             data_list = [self.get(i) for i in range(len(self))]
 
@@ -226,17 +224,13 @@ class CODataset(InMemoryDataset):
             for p in sorted(self._raw_dir.rglob("*"), reverse=True):
                 try:
                     p.unlink()
-                except IsADirectoryError:
+                except (IsADirectoryError, PermissionError):
                     pass
             try:
                 self._raw_dir.rmdir()
             except OSError:
                 # not empty due to shared artifacts; leave it
                 pass
-
-    def _load_co_graphs(self) -> List[Data]:
-        filepaths = self._find_matching_files(task=self.dataset_name, directory=self._raw_dir)
-        self.load(filepaths[0])
 
     def _find_matching_files(self,directory, task, split: Optional[str] = None, size: Optional[str] = None, target: Optional[str] = None):
         """
@@ -246,12 +240,6 @@ class CODataset(InMemoryDataset):
         return [os.path.join(directory,"processed", fname)
                 for fname in os.listdir(os.path.join(directory, 'processed'))
                 if fname == pattern]
-    
-
-    def load_labels(self):
-        labels_path = self._find_matching_files(task=self.target, directory=self.processed_path)
-        #download the labels for the supervised tasks if needed
-        return labels_path
     
     def process(self):
         self._prepare()
