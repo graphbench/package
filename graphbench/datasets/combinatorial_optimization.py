@@ -107,7 +107,6 @@ class CODataset(InMemoryDataset):
             url="redacted",
             raw_folder="supervised_labels",
         ),}
-        self.root = root
         #self.name_temp = name.replace("_"," ")
         #self.dataset_name = self.name_temp.lower().split(" ")[0]
         #self.size = self.name_temp.lower().split(" ")[1]
@@ -126,13 +125,11 @@ class CODataset(InMemoryDataset):
         self.load_preprocessed = load_preprocessed
 
         # paths
-        self.algoreas_dir = Path(root) / "co"
-        
-        
-        self._raw_dir = (self.algoreas_dir /  self.SOURCES[self.dataset_name].raw_folder / "raw")
+        self.root = Path(root) / "co" / self.SOURCES[self.dataset_name].raw_folder
+
         # Include time window & task in the processed filename to avoid collisions
-        self.processed_path = self.algoreas_dir /self.SOURCES[self.dataset_name].raw_folder / "processed" / "data.pt"
-        super().__init__(str(self.algoreas_dir), transform, pre_transform, pre_filter)
+        self.processed_path = Path(self.processed_dir) / "data.pt"
+        super().__init__(self.root, transform, pre_transform, pre_filter)
 
         # process data if needed
         if self.processed_path.exists():
@@ -161,6 +158,7 @@ class CODataset(InMemoryDataset):
 
     def _generate(self, pre_transform, transform) -> None:
         #generate the corresponding algorithmic reasoning dataset
+        # TODO RBDataset etc. may be using processed_dir where they should be using raw_dir. Refactor and get rid of SyntheticDataset.
         if "rb" in self.dataset_name:
             data = RBDataset(root=self.root, pre_transform=pre_transform, transform=transform)
 
@@ -189,9 +187,10 @@ class CODataset(InMemoryDataset):
             self.save(data, self.processed_path)
             logger.info(f"Saved processed dataset -> {self.processed_path}")
         else:
-            _download_and_unpack(source=self.source, raw_dir=self._raw_dir, processed_dir=self.processed_path.parent, logger=logger)
+            _download_and_unpack(source=self.source, raw_dir=self.raw_dir, processed_dir=Path(self.processed_dir), logger=logger)
 
-            self.load(self.processed_path)
+            filepaths = self._find_matching_files(task=self.dataset_name, directory=self.raw_dir)
+            self.load(filepaths[0])
 
             # collate & save
             data_list = [self.get(i) for i in range(len(self))]
@@ -219,16 +218,17 @@ class CODataset(InMemoryDataset):
             logger.info(f"Saved processed dataset -> {self.processed_path}")
 
     def _cleanup(self) -> None:
-        if self._raw_dir.exists():
-            logger.info(f"Cleaning up: {self._raw_dir}")
+        raw_dir = Path(self.raw_dir)
+        if raw_dir.exists():
+            logger.info(f"Cleaning up: {raw_dir}")
             # remove only the dataset-specific temp folder
-            for p in sorted(self._raw_dir.rglob("*"), reverse=True):
+            for p in sorted(raw_dir.rglob("*"), reverse=True):
                 try:
                     p.unlink()
                 except (IsADirectoryError, PermissionError):
                     pass
             try:
-                self._raw_dir.rmdir()
+                raw_dir.rmdir()
             except OSError:
                 # not empty due to shared artifacts; leave it
                 pass
@@ -253,5 +253,3 @@ class CODataset(InMemoryDataset):
     @property
     def processed_file_names(self) -> list[str]:
         return ['data.pt']
-    
-        
