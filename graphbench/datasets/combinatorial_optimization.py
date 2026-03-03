@@ -19,9 +19,9 @@ import logging
 import os
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable, Dict, List, Optional, Union
+from typing import Callable, Dict, Optional, Union
 
-from torch_geometric.data import Data, InMemoryDataset
+from torch_geometric.data import InMemoryDataset
 
 from graphbench.co_helpers.datasets import BADataset, ERDataset, RBDataset
 from graphbench.co_helpers.split_dataset import split_dataset
