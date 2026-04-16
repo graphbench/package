@@ -12,10 +12,10 @@ from typing import TYPE_CHECKING, Optional, Union
 import requests
 
 if TYPE_CHECKING:
-    from graphbench.datasets.bluesky import _SourceSpec
+    from graphbench.datasets._bluesky import _SourceSpec
 
 
-def _download_and_unpack(source: _SourceSpec, raw_dir: Union[str, Path], processed_dir: Union[str, Path], logger) -> None:
+def download_and_unpack(source: _SourceSpec, raw_dir: Union[str, Path], processed_dir: Union[str, Path], logger) -> None:
     raw_dir = Path(raw_dir)
     raw_dir.mkdir(parents=True, exist_ok=True)
     url = source.url

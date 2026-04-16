@@ -1,6 +1,6 @@
-from .loader import Loader
-from .evaluator import Evaluator
-#from .optimize import Optimizer
+from ._loader import Loader
+from ._evaluator import Evaluator
+#from ._optimize import Optimizer
 
 
-__all__ = ["Loader", "Evaluator"]
+__all__ = ["datasets", "Loader", "Evaluator"]

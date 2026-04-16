@@ -12,37 +12,27 @@ import torch
 from torch import Tensor
 from torch_geometric.data import Data, InMemoryDataset
 
-from graphbench.helpers.download import _download_and_unpack
+from graphbench._helpers import download_and_unpack
 
 
 TimeStamp: TypeAlias = Union[int, str]
-FEATURE_PT_PATH = "user_post_embs.pt" #raw files, slightly different name 
-TARGETS_PT_PATH = "user_post_counts.pt"
-DEFAULT_TRAIN_END = 20231211
-DEFAULT_PREDICTION_GAPS = [
-    42,
-    29,
-    27]
-IGNORED_FEED_GRAPHS = [ #another topology we do not use these 
-    '#Disability.csv',
-    'AcademicSky.csv',
-    'BlackSky.csv',
-    'BookSky.csv',
-    'Game Dev.csv',
-    'GreenSky.csv',
-    "What's History.csv"
-]
+
+_FEATURE_PT_PATH = "user_post_embs.pt" #raw files, slightly different name
+_TARGETS_PT_PATH = "user_post_counts.pt"
+_DEFAULT_TRAIN_END = 20231211
+_DEFAULT_PREDICTION_GAPS = [42, 29, 27]
+
 
 # -----------------------------------------------------------------------------#
 # (a) Utilities
 # -----------------------------------------------------------------------------#
 
-logger = logging.getLogger(__name__)
-if not logger.handlers:
+_logger = logging.getLogger(__name__)
+if not _logger.handlers:
     _h = logging.StreamHandler()
     _h.setFormatter(logging.Formatter("[%(levelname)s] %(message)s"))
-    logger.addHandler(_h)
-logger.setLevel(logging.INFO)
+    _logger.addHandler(_h)
+_logger.setLevel(logging.INFO)
 
 
 # -----------------------------------------------------------------------------#
@@ -73,7 +63,7 @@ def _default_ts_extractor(ts: TimeStamp) -> int:
         return int(s[:-4])
     return int(s)
 
-def crop_records(
+def _crop_records(
     data: Mapping[str, Sequence[Tuple[TimeStamp, Tensor]]],
     ts_start: Optional[int] = None,
     ts_end: int = None,
@@ -114,7 +104,7 @@ def _filter_edge_index(edge_index: Tensor, valid_nodes: set[int]) -> Tensor:
     )
     return edge_index[:, mask]
 
-def aggregate_post_embeddings(
+def _aggregate_post_embeddings(
     seq: Sequence[Tuple[TimeStamp, Tensor]],
     empty_emb: Tensor,
 ) -> Tensor:
@@ -143,7 +133,7 @@ def _reindex_edge_index(edge_index: Tensor, node_set: set[int]) -> Tuple[Tensor,
     id_map_reverse = {new: old for old, new in old_to_new.items()}
     return remapped_edge_index, id_map_reverse
 
-def add_edge_time(df: pd.DataFrame, format='%Y%m%d%H%M', index=2) -> Tuple[Tensor, Tensor]:
+def _add_edge_time(df: pd.DataFrame, format='%Y%m%d%H%M', index=2) -> Tuple[Tensor, Tensor]:
     dt = pd.to_datetime(df[df.columns[index]].astype(str), format=format, errors='coerce')
     valid = dt.notna()
     if valid.all():
@@ -199,7 +189,6 @@ class BlueSkyDataset(InMemoryDataset):
     """
 
     SOURCES_RAW: Dict[str, _SourceSpec] = {
-
         "bluesky_quotes": _SourceSpec(
             url="https://zenodo.org/records/14669616/files/graphs.tar.gz",
             raw_folder="bluesky_graphs",
@@ -242,9 +231,9 @@ class BlueSkyDataset(InMemoryDataset):
         cleanup_raw: bool = True,
         # TODO: This should be removed in the future -- the user will download these files
         load_preprocessed = True, #to load the preprocessed files 
-        feature_file_name: Union[str, Path] = FEATURE_PT_PATH,
+        feature_file_name: Union[str, Path] = _FEATURE_PT_PATH,
         empty_emb_file_name: Union[str, Path] = "empty.pt",
-        target_file_name: Union[str, Path] = TARGETS_PT_PATH,
+        target_file_name: Union[str, Path] = _TARGETS_PT_PATH,
     ):
         self.name = name.lower()
         if self.name not in self.SOURCES:
@@ -273,7 +262,7 @@ class BlueSkyDataset(InMemoryDataset):
 
         # process data if needed
         if self.processed_path.exists():
-            logger.info(f"Loading cached processed data: {self.processed_path}")
+            _logger.info(f"Loading cached processed data: {self.processed_path}")
             self.load(self.processed_path)
             return
 
@@ -284,8 +273,8 @@ class BlueSkyDataset(InMemoryDataset):
 
     def _prepare(self) -> None:
         # (b) Download & unpack helpers
-        _download_and_unpack(self.source, self._raw_dir, Path(self.processed_dir), logger=logger)
-        _download_and_unpack(self.source_features, self._raw_feature_dir, Path(self.processed_dir), logger=logger)
+        download_and_unpack(self.source, self._raw_dir, Path(self.processed_dir), logger=_logger)
+        download_and_unpack(self.source_features, self._raw_feature_dir, Path(self.processed_dir), logger=_logger)
         # Pick default ts_train_end and gap per dataset type
        
         if self.name in {'bluesky_quotes', 'bluesky_replies', 'bluesky_reposts'}:
@@ -296,8 +285,8 @@ class BlueSkyDataset(InMemoryDataset):
 
         # (i) Graph Processing: decide ts_end for loader
         # TODO: using default values for now, could be made graph specific
-        ts_train_end = DEFAULT_TRAIN_END
-        prediction_gaps = DEFAULT_PREDICTION_GAPS
+        ts_train_end = _DEFAULT_TRAIN_END
+        prediction_gaps = _DEFAULT_PREDICTION_GAPS
         ts_known_data_end, ts_pred_data_end = self._get_time_windows(ts_train_end, prediction_gaps)
 
         # update loader_kwargs with ts_end
@@ -328,19 +317,19 @@ class BlueSkyDataset(InMemoryDataset):
                 data_list = [self.pre_transform(d) for d in data_list]
 
         if self.split == 'all_targets':
-            logger.info('Loading target dictionary...')
+            _logger.info('Loading target dictionary...')
             target_dict = torch.load(self.target_file_name, weights_only=False)
             ys = list()
             for key in target_dict:
                 ys += target_dict[key]
-            logger.info('Setting targets into the PyG data object...')
+            _logger.info('Setting targets into the PyG data object...')
             for data in data_list:
                 data.y = torch.tensor(ys)
 
         #data, slices = self.collate(data_list)
         #torch.save((data, slices), self.processed_path)
         self.save(data_list, self.processed_path)
-        logger.info(f"Saved processed dataset -> {self.processed_path}")
+        _logger.info(f"Saved processed dataset -> {self.processed_path}")
 
 
     def _get_time_windows(self, ts_train_end, prediction_gaps) -> Optional[int]:
@@ -360,7 +349,7 @@ class BlueSkyDataset(InMemoryDataset):
 
     def _cleanup(self) -> None:
         if self._raw_dir.exists():
-            logger.info(f"Cleaning up: {self._raw_dir}")
+            _logger.info(f"Cleaning up: {self._raw_dir}")
             # remove only the dataset-specific temp folder
             for p in sorted(self._raw_dir.rglob("*"), reverse=True):
                 try:
@@ -388,7 +377,7 @@ class BlueSkyDataset(InMemoryDataset):
                 continue
             # Check for timestamp column
             if include_timestamps:
-                edge_time, edge_index = add_edge_time(df, format='%Y%m%d', index=2)
+                edge_time, edge_index = _add_edge_time(df, format='%Y%m%d', index=2)
                 data = Data(edge_index=edge_index, edge_time=edge_time)
             else:
                 df = df.drop_duplicates(subset=[df.columns[0], df.columns[1]])  
@@ -437,9 +426,9 @@ class BlueSkyDataset(InMemoryDataset):
             )
             empty_emb: Tensor = torch.load(self.empty_file_name, weights_only=False)
 
-            cropped_feats = crop_records(post_emb_dict, ts_start=None, ts_end=ts_feat_end)
+            cropped_feats = _crop_records(post_emb_dict, ts_start=None, ts_end=ts_feat_end)
             user_embs: Dict[str, Tensor] = {
-                uid: aggregate_post_embeddings(seq, empty_emb) for uid, seq in cropped_feats.items()
+                uid: _aggregate_post_embeddings(seq, empty_emb) for uid, seq in cropped_feats.items()
             }
 
             # ---- Targets in (ts_pred_start, ts_pred_end]
@@ -493,6 +482,3 @@ class BlueSkyDataset(InMemoryDataset):
             torch.save(y, os.path.join(self.root, 'raw', f'y_{self.name}_{self.split}.pt'))
             
         return x, y, edge_index, id_map_rev
-
-
- 

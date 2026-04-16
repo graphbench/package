@@ -1,14 +1,3 @@
-"""
-evaluator.py
-----------------
-Utility class to evaluate model outputs for tasks supported by
-GraphBench. The `Evaluator` class centralizes selection of metrics and
-computes task-specific scores such as classification accuracy, F1,
-regression metrics, and specialized scores used by
-benchmarks (e.g., ClosedGap, ChipDesignScore, Weather_MSE).
-
-"""
-
 import os
 
 import numpy as np
@@ -19,8 +8,8 @@ from torch import Tensor
 from torch_geometric.data import Batch
 from torch_geometric.utils import remove_self_loops, unbatch, unbatch_edge_index
 
-from graphbench.helpers.utils import VectorizedCircuitSimulator
-from graphbench.weatherforecasting_helpers.losses import (
+from graphbench._helpers import VectorizedCircuitSimulator
+from graphbench._weatherforecasting_helpers import (
     compute_latitude_weights,
     compute_pressure_level_weights,
     get_default_pressure_levels,
@@ -31,6 +20,12 @@ from graphbench.weatherforecasting_helpers.losses import (
 
 class Evaluator():
     """Select and compute metrics for specified benchmark tasks.
+
+    Utility class to evaluate model outputs for tasks supported by
+    GraphBench. The `Evaluator` class centralizes selection of metrics and
+    computes task-specific scores such as classification accuracy, F1,
+    regression metrics, and specialized scores used by
+    benchmarks (e.g., ClosedGap, ChipDesignScore, Weather_MSE).
 
     Args:
         name (str): The named benchmark. The implementation reads

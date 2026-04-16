@@ -261,7 +261,7 @@ class TestGraphBenchEvaluatorFull(unittest.TestCase):
     def test_chip_design_score(self):
         ev = self.get_evaluator("ChipDesignScore")
         
-        with patch('graphbench.evaluator.VectorizedCircuitSimulator') as MockSim, \
+        with patch('graphbench._evaluator.VectorizedCircuitSimulator') as MockSim, \
              patch.object(ev, 'extract_input_output_counts', return_value=(2, 1), create=True), \
              patch.object(ev, 'equivalence_score', wraps=ev._equivalence_score, create=True):
             # Setup mock: both sims return same truth table
