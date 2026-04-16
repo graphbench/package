@@ -15,7 +15,7 @@ from typing import Callable, Dict, List, Optional, Union
 
 from torch_geometric.data import Data, InMemoryDataset
 
-from graphbench._helpers import download_and_unpack
+from graphbench.helpers.download import _download_and_unpack
 
 
 # (i) helper functions
@@ -24,12 +24,12 @@ from graphbench._helpers import download_and_unpack
 # (a) Utilities
 # -----------------------------------------------------------------------------#
 
-_logger = logging.getLogger(__name__)
-if not _logger.handlers:
+logger = logging.getLogger(__name__)
+if not logger.handlers:
     _h = logging.StreamHandler()
     _h.setFormatter(logging.Formatter("[%(levelname)s] %(message)s"))
-    _logger.addHandler(_h)
-_logger.setLevel(logging.INFO)
+    logger.addHandler(_h)
+logger.setLevel(logging.INFO)
 
 
 @dataclass(frozen=True)
@@ -55,8 +55,9 @@ class WeatherforecastingDataset(InMemoryDataset):
         # TODO: This should be removed in the future -- the user will download these files
         load_preprocessed = False,
         *args, 
-        **kwargs,
-    ):
+        **kwargs):
+        
+
 
         #currently downloads everything at once for a single dataset. Up to the user to manually unpack it so far
         self.SOURCES: Dict[str, _SourceSpec] = {
@@ -81,7 +82,7 @@ class WeatherforecastingDataset(InMemoryDataset):
 
         # process data if needed
         if self.processed_path.exists():
-            _logger.info(f"Loading cached processed data: {self.processed_path}")
+            logger.info(f"Loading cached processed data: {self.processed_path}")
             self.load(self.processed_path)
             return
 
@@ -92,7 +93,7 @@ class WeatherforecastingDataset(InMemoryDataset):
 
     def _generate(self) -> None:
         #generate the corresponding weatherforecasting reasoning dataset
-        raise NotImplementedError("Dataset generation not supported yet.")
+        pass 
         #fs = gcsfs.GCSFileSystem(token='anon')
 
         #mapper = fs.get_mapper('weatherbench2/datasets/era5/1959-2023_01_10-6h-64x32_equiangular_conservative.zarr')
@@ -119,16 +120,17 @@ class WeatherforecastingDataset(InMemoryDataset):
         """
         if self.generate:
             #currently not implemented
-            data_list = self._generate()
+            pass
+            #data_list = self._generate()
         else:
-            download_and_unpack(source=self.source, raw_dir=self._raw_dir, logger=_logger, processed_dir=self.processed_path)
+            _download_and_unpack(source=self.source, raw_dir=self._raw_dir, logger=logger, processed_dir=self.processed_path)
             loader = self._load_weather_graphs
             loader_kwargs = {}
             data_list = loader(**loader_kwargs)
         if self.pre_transform is not None:
             data_list = [self.pre_transform(d) for d in data_list]
         self.save(data_list, self.processed_path)
-        _logger.info(f"Saved processed dataset -> {self.processed_path}")
+        logger.info(f"Saved processed dataset -> {self.processed_path}")
 
 
 
@@ -137,7 +139,7 @@ class WeatherforecastingDataset(InMemoryDataset):
         Remove temporary raw data files for this dataset split.
         """
         if self._raw_dir.exists():
-            _logger.info(f"Cleaning up: {self._raw_dir}")
+            logger.info(f"Cleaning up: {self._raw_dir}")
             # remove only the dataset-specific temp folder
             for p in sorted(self._raw_dir.rglob("*"), reverse=True):
                 try:

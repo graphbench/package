@@ -28,7 +28,7 @@ import torch
 from torch_geometric.data import Data, InMemoryDataset
 from tqdm import tqdm
 
-from graphbench._helpers import download_and_unpack
+from graphbench.helpers.download import _download_and_unpack
 
 
 # (i) helper functions
@@ -37,12 +37,12 @@ from graphbench._helpers import download_and_unpack
 # (a) Utilities
 # -----------------------------------------------------------------------------#
 
-_logger = logging.getLogger(__name__)
-if not _logger.handlers:
+logger = logging.getLogger(__name__)
+if not logger.handlers:
     _h = logging.StreamHandler()
     _h.setFormatter(logging.Formatter("[%(levelname)s] %(message)s"))
-    _logger.addHandler(_h)
-_logger.setLevel(logging.INFO)
+    logger.addHandler(_h)
+logger.setLevel(logging.INFO)
 
 
 @dataclass(frozen=True)
@@ -60,16 +60,19 @@ class ChipDesignDataset(InMemoryDataset):
         pre_transform: Optional[Callable] = None,
         cleanup_raw: bool = False,  # TODO Disabling this for now since it leads to errors on my machine
         # TODO: This should be removed in the future -- the user will download these files
-        load_preprocessed = False,
-    ):
+        load_preprocessed = False,):
+        
+
+
         # currently downloads everything at once for a single dataset. Up to the user to manually unpack it so far
         self.SOURCES: Dict[str, _SourceSpec] = {
-            "chipdesign": _SourceSpec(
-                url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_chipdesign/resolve/main/chipdesign.zip",
-                raw_folder="chipdesign",
-            ),
-        }
-
+        "chipdesign": _SourceSpec(
+            url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_chipdesign/resolve/main/chipdesign.zip",
+            raw_folder="chipdesign",
+        ),
+    }
+       
+        
         self.name = name.lower()
         if self.name not in self.SOURCES:
             raise ValueError(f"Unsupported dataset name: {self.name}")
@@ -102,7 +105,7 @@ class ChipDesignDataset(InMemoryDataset):
 
         # process data if needed
         if self.processed_path.exists():
-            _logger.info(f"Loading cached processed data: {self.processed_path}")
+            logger.info(f"Loading cached processed data: {self.processed_path}")
             self.load(self.processed_path)
             return
 
@@ -121,7 +124,7 @@ class ChipDesignDataset(InMemoryDataset):
 
         # Download/unpack the archive into `self._raw_dir` and provide a
         # `processed_dir` hint for helpers that may extract processed artifacts.
-        download_and_unpack(source=self.source, raw_dir=self._raw_dir, logger=_logger, processed_dir=self.processed_path)
+        _download_and_unpack(source=self.source, raw_dir=self._raw_dir, logger=logger, processed_dir=self.processed_path)
 
         # Load and convert the raw files to PyG Data objects
         data_list = self._load_chipdesign_graphs()
@@ -132,12 +135,12 @@ class ChipDesignDataset(InMemoryDataset):
 
         # Save the processed cache for fast subsequent loads
         self.save(data_list, self.processed_path)
-        _logger.info(f"Saved processed dataset -> {self.processed_path}")
+        logger.info(f"Saved processed dataset -> {self.processed_path}")
 
 
     def _cleanup(self) -> None:
         if self._raw_dir.exists():
-            _logger.info(f"Cleaning up: {self._raw_dir}")
+            logger.info(f"Cleaning up: {self._raw_dir}")
             # remove only the dataset-specific temp folder
             for p in sorted(self._raw_dir.rglob("*"), reverse=True):
                 try:
@@ -177,11 +180,11 @@ class ChipDesignDataset(InMemoryDataset):
                 num_samples = len(config_data['x'])
 
                 for i in tqdm(range(num_samples), desc=f"Processing {config_key}"):
-                    pyg_data = self._load_sample(config_data, i, num_inputs, num_outputs)
+                    pyg_data = self.load_sample(config_data, i, num_inputs, num_outputs)
 
                     # Extract truth vectors for equivalence checking
                     truth_vectors = config_data['truth_vectors'][i]
-                    stored_truth = self._extract_truth_vectors(truth_vectors, num_inputs, num_outputs)
+                    stored_truth = self.extract_truth_vectors(truth_vectors, num_inputs, num_outputs)
 
                     if stored_truth is not None:
                         pyg_data.sample_idx = sample_idx
@@ -209,7 +212,7 @@ class ChipDesignDataset(InMemoryDataset):
 
 
 
-    def _load_sample(self,config_data, sample_idx, num_inputs, num_outputs):
+    def load_sample(self,config_data, sample_idx, num_inputs, num_outputs):
         """
         Convert a single sample (from the raw config dict) into a PyG Data
         object.
@@ -240,7 +243,7 @@ class ChipDesignDataset(InMemoryDataset):
         return data
 
 
-    def _extract_truth_vectors(self,truth_vectors, num_inputs, num_outputs):
+    def extract_truth_vectors(self,truth_vectors, num_inputs, num_outputs):
         """
         Fast truth vector extraction with numpy operations.
 

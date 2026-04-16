@@ -16,7 +16,7 @@ GENERATORS (dict):
     Maps string names of graph generator types to their corresponding NetworkX generator functions.
     Used to dynamically select and instantiate different random graph models.
 """
-_GENERATORS = {
+GENERATORS = {
     "erdos-reyni": nx.erdos_renyi_graph,
     "newman–watts–strogatz": nx.generators.random_graphs.newman_watts_strogatz_graph,
     "barabasi-albert": nx.generators.random_graphs.barabasi_albert_graph,
@@ -30,7 +30,7 @@ GENERATORS_LIST (list):
     List of all available graph generator names as strings.
     Useful for sampling or iterating over supported generator types.
 """
-_GENERATORS_LIST = list(_GENERATORS.keys())
+GENERATORS_LIST = list(GENERATORS.keys())
 
 """
 CONFIG (dict):
@@ -38,7 +38,7 @@ CONFIG (dict):
     Each entry specifies the parameters used for training data generation for different algorithms.
     Format and parameters depend on the generator type (see inline comments for details).
 """
-_CONFIG = {
+CONFIG = {
     "erdos-reyni": {"bridges": (1,0.11), "shortest_path": (1,0.17), "mst": (1,0.19), "flow": (1,0.16), "maxclique":(1,0.9), "steinertree":(1,0.14), "bipartitematching":(1,0.08), "topologicalorder":(1,0.3)},
     "newman–watts–strogatz": {"bridges": (1,1,1), "shortest_path": (1,2,0.15), "mst": (1,4,0.2), "flow": (1,4,0.2), "maxclique":(1,4,0.6), "steinertree":(1,4,0.12), "bipartitematching":(1,6,0.18), "topologicalorder":(1,2,0.2)},
     "barabasi-albert": {"bridges": (1,1), "shortest_path": (1,2), "mst": (1,3), "flow": (1,3), "maxclique":(1,8), "steinertree":(1,2), "bipartitematching":(1,3), "topologicalorder":(1,4)},
@@ -53,7 +53,7 @@ CONFIG_TEST (dict):
     Each entry specifies the parameters used for test data generation for different algorithms.
     Format and parameters depend on the generator type (see inline comments for details).
 """
-_CONFIG_TEST = {
+CONFIG_TEST = {
     "erdos-reyni": {"bridges": (1,0.07), "shortest_path": (1,0.17), "mst": (1,0.25), "flow": (1,0.16), "maxclique":(1,0.9), "steinertree":(1,0.14), "bipartitematching":(1,0.08), "topologicalorder":(1,0.3)},
     "newman–watts–strogatz": {"bridges": (1,1,1), "shortest_path": (1,2,0.15), "mst": (1,5,0.8), "flow": (1,4,0.2), "maxclique":(1,4,0.6), "steinertree":(1,4,0.12), "bipartitematching":(1,6,0.18), "topologicalorder":(1,2,0.2)},
     "barabasi-albert": {"bridges": (1,1), "shortest_path": (1,2), "mst": (1,7), "flow":(1,3), "maxclique":(1,8), "steinertree":(1,2), "bipartitematching":(1,3), "topologicalorder":(1,4)},
@@ -66,7 +66,7 @@ _CONFIG_TEST = {
 SAMPLES (dict):
     Specifies the number of samples to generate for each dataset split ('train', 'val', 'test').
 """
-_SAMPLES = {
+SAMPLES = {
     "train": 1000000,
     "val": 10000,
     "test": 10000,
@@ -77,7 +77,7 @@ SAMPLING_LIST_TRAIN (dict):
     Sampling weights for each difficulty level during training.
     Each list corresponds to the probability weights for selecting each generator type.
 """
-_SAMPLING_LIST_TRAIN = {
+SAMPLING_LIST_TRAIN = {
     "easy": [1,0,1,0,1,0],
     "medium": [1,0,0,0,0,0],
     "hard": [1,0,0,0,0,0],
@@ -88,27 +88,27 @@ SAMPLING_LIST_TEST (dict):
     Sampling weights for each difficulty level during testing.
     Each list corresponds to the probability weights for selecting each generator type.
 """
-_SAMPLING_LIST_TEST = {
+SAMPLING_LIST_TEST = {
     "easy": [1,1,1,1,1,1],
     "medium": [1,1,1,1,1,1],
     "hard": [0,1,1,1,1,1],
 }
 
-def _generate_graph_util(num_nodes, name, generator, is_training):
+def generate_graph_util(num_nodes, name, generator, is_training):
     if generator == "stochastic-block-model":
         if is_training:
-            graph = _GENERATORS[generator]([int(_CONFIG[generator][name][1][0]*num_nodes), int(_CONFIG[generator][name][1][1]*num_nodes)], _CONFIG[generator][name][2])
+            graph = GENERATORS[generator]([int(CONFIG[generator][name][1][0]*num_nodes), int(CONFIG[generator][name][1][1]*num_nodes)], CONFIG[generator][name][2])
         else:
-            graph = _GENERATORS[generator]([int(_CONFIG_TEST[generator][name][1][0]*num_nodes), int(_CONFIG_TEST[generator][name][1][1]*num_nodes)], _CONFIG_TEST[generator][name][2])
+            graph = GENERATORS[generator]([int(CONFIG_TEST[generator][name][1][0]*num_nodes), int(CONFIG_TEST[generator][name][1][1]*num_nodes)], CONFIG_TEST[generator][name][2])
     else:
         if is_training:
-            graph = _GENERATORS[generator](num_nodes, *_CONFIG[generator][name][1:])
+            graph = GENERATORS[generator](num_nodes, *CONFIG[generator][name][1:])
         else:
-            graph = _GENERATORS[generator](num_nodes, *_CONFIG_TEST[generator][name][1:])
+            graph = GENERATORS[generator](num_nodes, *CONFIG_TEST[generator][name][1:])
     cc = list(nx.connected_components(graph))
     if len(cc) >= 2:
         for i in range(len(cc)):
-            for _ in range(_CONFIG[generator][name][0]):
+            for _ in range(CONFIG[generator][name][0]):
                 j = random.choice([j for j in range(len(cc)) if j != i])
                 a = random.choice(list(cc[i]))
                 b = random.choice(list(cc[j]))
@@ -116,17 +116,17 @@ def _generate_graph_util(num_nodes, name, generator, is_training):
     return graph
 
 
-def _generate_graph(sampling_list, num_nodes, name, is_training):
-    random_generator = random.choices(_GENERATORS_LIST, sampling_list, k=2)[0]
+def generate_graph(sampling_list, num_nodes, name, is_training):
+    random_generator = random.choices(GENERATORS_LIST, sampling_list, k=2)[0]
 
-    return _generate_graph_util(num_nodes=num_nodes, name=name, generator=random_generator, is_training=is_training)
-
-
+    return generate_graph_util(num_nodes=num_nodes, name=name, generator=random_generator, is_training=is_training)
 
 
-def _mst_graph(num_nodes, name, sampling_list, is_training):
+
+
+def mst_graph(num_nodes, name, sampling_list, is_training):
     while True:
-        graph = _generate_graph(sampling_list, num_nodes, name, is_training)
+        graph = generate_graph(sampling_list, num_nodes, name, is_training)
         if len(graph.edges) < 1:
             continue
 
@@ -144,8 +144,8 @@ def _mst_graph(num_nodes, name, sampling_list, is_training):
             return graph, edges
 
 
-def _mst(num_nodes, name, sampling_list, is_training):
-    graph, edges = _mst_graph(num_nodes, name, sampling_list, is_training)
+def mst(num_nodes, name, sampling_list, is_training):
+    graph, edges = mst_graph(num_nodes, name, sampling_list, is_training)
     data = from_networkx(graph)
     data.y = torch.zeros(data.edge_index.size(1), dtype=torch.long)
 
@@ -157,14 +157,14 @@ def _mst(num_nodes, name, sampling_list, is_training):
 
 
 
-def _bridges_graph(num_nodes, name, sampling_list, is_training):
-    graph = _generate_graph(sampling_list, num_nodes, name, is_training)
+def bridges_graph(num_nodes, name, sampling_list, is_training):
+    graph = generate_graph(sampling_list, num_nodes, name, is_training)
     edges = list(nx.bridges(graph))
     return graph, edges
 
 
-def _bridges(num_nodes, name, sampling_list, is_training):
-    graph, edges = _bridges_graph(num_nodes, name, sampling_list, is_training)
+def bridges(num_nodes, name, sampling_list, is_training):
+    graph, edges = bridges_graph(num_nodes, name, sampling_list, is_training)
     data = from_networkx(graph)
     data.y = torch.zeros(data.edge_index.size(1), dtype=torch.long)
 
@@ -176,8 +176,8 @@ def _bridges(num_nodes, name, sampling_list, is_training):
 
 
 
-def _flow_graph(sampling_list, num_nodes, name, is_training):
-    graph = _generate_graph(sampling_list, num_nodes, name, is_training).to_directed()
+def flow_graph(sampling_list, num_nodes, name, is_training):
+    graph = generate_graph(sampling_list, num_nodes, name, is_training).to_directed()
     weight_dict = {
         e: {"edge_attr": round(random.uniform(0, 3), 2)} for e in graph.edges
     }
@@ -190,8 +190,8 @@ def _flow_graph(sampling_list, num_nodes, name, is_training):
     return graph, source, sink, value
 
 
-def _flow(num_nodes, name, sampling_list, is_training):
-    graph, source, sink, value = _flow_graph(sampling_list, num_nodes, name, is_training)
+def flow(num_nodes, name, sampling_list, is_training):
+    graph, source, sink, value = flow_graph(sampling_list, num_nodes, name, is_training)
     data = from_networkx(graph)
     data.x = torch.zeros(data.num_nodes, dtype=torch.long)
     data.y = torch.tensor(value)
@@ -202,16 +202,16 @@ def _flow(num_nodes, name, sampling_list, is_training):
 
 
 
-def _max_clique_graph(num_nodes, name, sampling_list, is_training):
-    graph = _generate_graph(sampling_list, num_nodes, name, is_training)
+def max_clique_graph(num_nodes, name, sampling_list, is_training):
+    graph = generate_graph(sampling_list, num_nodes, name, is_training)
 
     max_clique = nx.approximation.max_clique(graph)
     
     return graph, max_clique
 
 
-def _max_clique(num_nodes, name, sampling_list, is_training):
-    graph, max_clique_nodes = _max_clique_graph(num_nodes, name, sampling_list, is_training)
+def max_clique(num_nodes, name, sampling_list, is_training):
+    graph, max_clique_nodes = max_clique_graph(num_nodes, name, sampling_list, is_training)
     
     data = from_networkx(graph)
     
@@ -225,9 +225,9 @@ def _max_clique(num_nodes, name, sampling_list, is_training):
 
 
 
-def _steiner_tree_graph(num_nodes, name, sampling_list, is_training, num_terminals=3):
+def steiner_tree_graph(num_nodes, name, sampling_list, is_training, num_terminals=3):
     while True:
-        graph = _generate_graph(sampling_list, num_nodes, name, is_training)
+        graph = generate_graph(sampling_list, num_nodes, name, is_training)
         if len(graph.edges) < 1:
             continue
 
@@ -249,8 +249,8 @@ def _steiner_tree_graph(num_nodes, name, sampling_list, is_training, num_termina
                 continue
 
 
-def _steiner_tree(num_nodes, name, sampling_list, is_training, num_terminals=3):
-    graph, steiner_edges, terminal_nodes = _steiner_tree_graph(num_nodes, name, sampling_list, is_training, num_terminals)
+def steiner_tree(num_nodes, name, sampling_list, is_training, num_terminals=3):
+    graph, steiner_edges, terminal_nodes = steiner_tree_graph(num_nodes, name, sampling_list, is_training, num_terminals)
     
     data = from_networkx(graph)
     
@@ -271,9 +271,9 @@ def _steiner_tree(num_nodes, name, sampling_list, is_training, num_terminals=3):
 
 
 
-def _bipartite_matching_graph(num_nodes, name, sampling_list, is_training, p=0.3):
+def bipartite_matching_graph(num_nodes, name, sampling_list, is_training, p=0.3):
 
-    graph = _generate_graph(sampling_list, num_nodes, name, is_training)
+    graph = generate_graph(sampling_list, num_nodes, name, is_training)
 
     weight_dict = {
         e: {"edge_attr": round(random.uniform(0, 5), 2)} for e in graph.edges
@@ -287,8 +287,8 @@ def _bipartite_matching_graph(num_nodes, name, sampling_list, is_training, p=0.3
     
 
 
-def _bipartite_matching(num_nodes, name=None, sampling_list=None, is_training=None, p=0.3, *args, **kwargs):
-    graph, matching_edges = _bipartite_matching_graph(num_nodes, name, sampling_list, is_training)
+def bipartite_matching(num_nodes, name=None, sampling_list=None, is_training=None, p=0.3, *args, **kwargs):
+    graph, matching_edges = bipartite_matching_graph(num_nodes, name, sampling_list, is_training)
     
     data = from_networkx(graph)
     
@@ -304,8 +304,8 @@ def _bipartite_matching(num_nodes, name=None, sampling_list=None, is_training=No
     return data
 
 
-def _topological_order_graph(num_nodes, name, sampling_list, is_training):
-    undirected = _generate_graph(sampling_list, num_nodes, name, is_training)
+def topological_order_graph(num_nodes, name, sampling_list, is_training):
+    undirected = generate_graph(sampling_list, num_nodes, name, is_training)
     order = list(range(num_nodes))
     random.shuffle(order)
     position = {node: idx for idx, node in enumerate(order)}
@@ -322,8 +322,8 @@ def _topological_order_graph(num_nodes, name, sampling_list, is_training):
     return dag, rank
 
 
-def _topological_order(num_nodes, name, sampling_list, is_training):
-    graph, rank = _topological_order_graph(num_nodes, name, sampling_list, is_training)
+def topological_order(num_nodes, name, sampling_list, is_training):
+    graph, rank = topological_order_graph(num_nodes, name, sampling_list, is_training)
     data = from_networkx(graph)
     y = torch.zeros(data.num_nodes, dtype=torch.float)
     if data.num_nodes > 1:
@@ -336,14 +336,14 @@ def _topological_order(num_nodes, name, sampling_list, is_training):
 
 
 
-_ALGORITHMS = {
-    "bridges": _bridges,
-    "mst": _mst,
-    "flow": _flow,
-    "maxclique": _max_clique,
-    "steinertree": _steiner_tree,
-    "bipartitematching": _bipartite_matching,
-    "topologicalorder": _topological_order,
+ALGORITHMS = {
+    "bridges": bridges,
+    "mst": mst,
+    "flow": flow,
+    "maxclique": max_clique,
+    "steinertree": steiner_tree,
+    "bipartitematching": bipartite_matching,
+    "topologicalorder": topological_order,
 }
 
 
@@ -351,14 +351,14 @@ def generate_algoreas_data(name, num_nodes, difficulty, split):
     
     if split == "train":
         data_list = [
-                _ALGORITHMS[name](num_nodes, name, _SAMPLING_LIST_TRAIN[difficulty], True)
-                for _ in tqdm.tqdm(range(_SAMPLES[split]))
+                ALGORITHMS[name](num_nodes, name, SAMPLING_LIST_TRAIN[difficulty], True)
+                for _ in tqdm.tqdm(range(SAMPLES[split]))
             
             ]
     else: 
         data_list = [
-                _ALGORITHMS[name](num_nodes, name, _SAMPLING_LIST_TEST[difficulty], False)
-                for _ in tqdm.tqdm(range(_SAMPLES[split]))
+                ALGORITHMS[name](num_nodes, name, SAMPLING_LIST_TEST[difficulty], False)
+                for _ in tqdm.tqdm(range(SAMPLES[split]))
             
             ]
 

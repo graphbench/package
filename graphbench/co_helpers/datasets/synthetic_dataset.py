@@ -8,7 +8,7 @@ import networkx as nx
 from torch_geometric.data import Data, InMemoryDataset
 from tqdm import tqdm
 
-from .._parallelize_with_progress_bar import parallelize_with_progress_bar
+from ..parallelize_with_progress_bar import parallelize_with_progress_bar
 
 
 class SyntheticDataset(InMemoryDataset, ABC):

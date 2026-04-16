@@ -27,19 +27,19 @@ from torch_geometric.data import Data, HeteroData, InMemoryDataset
 from torch_geometric.io import fs
 from tqdm import tqdm
 
-from graphbench._helpers import download_and_unpack
+from graphbench.helpers.download import _download_and_unpack
 
 
 # (0) Constants
-_SMALL_N_VARS = 3_000
-_MEDIUM_N_VARS = 20_000
+SMALL_N_VARS = 3_000
+MEDIUM_N_VARS = 20_000
 # SMALL_N_CLAUSES = 2000_000
 # SMALL_N_VARS = 500_000
 # MAX_TIME = 60
-_MAX_TIME = 6000000000
+MAX_TIME = 6000000000
 # SMALL_N_VARS = 100000000_000
-_SMALL_N_CLAUSES = 15_000
-_MEDIUM_N_CLAUSES = 90_000
+SMALL_N_CLAUSES = 15_000
+MEDIUM_N_CLAUSES = 90_000
 
 
 
@@ -49,12 +49,12 @@ _MEDIUM_N_CLAUSES = 90_000
 # (a) Utilities
 # -----------------------------------------------------------------------------#
 
-_logger = logging.getLogger(__name__)
-if not _logger.handlers:
+logger = logging.getLogger(__name__)
+if not logger.handlers:
     _h = logging.StreamHandler()
     _h.setFormatter(logging.Formatter("[%(levelname)s] %(message)s"))
-    _logger.addHandler(_h)
-_logger.setLevel(logging.INFO)
+    logger.addHandler(_h)
+logger.setLevel(logging.INFO)
 
 
 
@@ -84,31 +84,31 @@ class SATDataset(InMemoryDataset):
         #currently downloads everything at once for a single dataset. Up to the user to manually unpack it so far
 
         self.SOURCES: Dict[str, _SourceSpec] = {
-            "sat_lcg_as": _SourceSpec(
-                url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_SAT/resolve/main/data_small_lcg_no_trans.pt.xz",
-                raw_folder="sat_lcg_as",
-            ),
-            "sat_vcg_as": _SourceSpec(
-                url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_SAT/resolve/main/data_small_vcg_no_trans.pt.xz",
-                raw_folder="sat_vcg_as",
-            ),
-            "sat_vg_as": _SourceSpec(
-                url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_SAT/resolve/main/data_small_vg_no_trans.pt.xz",
-                raw_folder="sat_vg_as",
-            ),
-            "sat_lcg_epm": _SourceSpec(
-                url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_SAT/resolve/main/data_small_lcg_no_trans.pt.xz",
-                raw_folder="sat_lcg_epm",
-            ),
-            "sat_vcg_epm": _SourceSpec(
-                url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_SAT/resolve/main/data_small_vcg_no_trans.pt.xz",
-                raw_folder="sat_vcg_epm",
-            ),
-            "sat_vg_epm": _SourceSpec(
-                url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_SAT/resolve/main/data_small_vg_no_trans.pt.xz",
-                raw_folder="sat_vg_epm",
-            ),
-        }
+        "sat_lcg_as": _SourceSpec(
+            url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_SAT/resolve/main/data_small_lcg_no_trans.pt.xz",
+            raw_folder="sat_lcg_as",
+        ), 
+        "sat_vcg_as": _SourceSpec(
+            url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_SAT/resolve/main/data_small_vcg_no_trans.pt.xz",
+            raw_folder="sat_vcg_as",
+        ),
+        "sat_vg_as": _SourceSpec(
+            url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_SAT/resolve/main/data_small_vg_no_trans.pt.xz",
+            raw_folder="sat_vg_as",
+        ),
+        "sat_lcg_epm": _SourceSpec(
+            url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_SAT/resolve/main/data_small_lcg_no_trans.pt.xz",
+            raw_folder="sat_lcg_epm",
+        ),
+        "sat_vcg_epm": _SourceSpec(
+            url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_SAT/resolve/main/data_small_vcg_no_trans.pt.xz",
+            raw_folder="sat_vcg_epm",
+        ),
+        "sat_vg_epm": _SourceSpec(
+            url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_SAT/resolve/main/data_small_vg_no_trans.pt.xz",
+            raw_folder="sat_vg_epm",
+        ),
+    }
         self.SOURCE_CSV = _SourceSpec(
             url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_SAT/resolve/main/sat_csv.zip",
             raw_folder="sat_csv",
@@ -133,7 +133,7 @@ class SATDataset(InMemoryDataset):
         csv_dir = Path(root) / self.SOURCE_CSV.raw_folder
         if not csv_dir.exists():
             print(f"Downloading supplementary CSV files to {csv_dir}...")
-            download_and_unpack(source=self.SOURCE_CSV, raw_dir=csv_dir, processed_dir=csv_dir / "processed", logger=_logger)
+            _download_and_unpack(source=self.SOURCE_CSV, raw_dir=csv_dir, processed_dir=csv_dir / "processed", logger=logger)
         self.solver = solver
         self.instances_csv = pd.read_csv(Path(root) /"sat_csv"/ "instances_new.csv")
         #self.dataset_name = self.name_temp.lower().split(" ")[0]
@@ -145,13 +145,13 @@ class SATDataset(InMemoryDataset):
         self.runs = pd.read_csv(Path(root) /"sat_csv"/ "runs.csv", index_col=0)
         if self.formula_sizes == "small":
             self.instances_csv = self.instances_csv[
-                (self.instances_csv["n_vars"] < _SMALL_N_VARS)
-                & (self.instances_csv["n_clauses"] < _SMALL_N_CLAUSES)]
+                (self.instances_csv["n_vars"] < SMALL_N_VARS)
+                & (self.instances_csv["n_clauses"] < SMALL_N_CLAUSES)]
 
         elif self.formula_sizes == "medium":
             self.instances_csv = self.instances_csv[
-                (self.instances_csv["n_vars"] < _MEDIUM_N_VARS)
-                & (self.instances_csv["n_clauses"] < _MEDIUM_N_CLAUSES)]
+                (self.instances_csv["n_vars"] < MEDIUM_N_VARS)
+                & (self.instances_csv["n_clauses"] < MEDIUM_N_CLAUSES)]
         if self.use_satzilla_features:
             self.features = pd.read_csv(Path(root) / "sat_csv" / "features.csv")
             self.features.set_index("filename", inplace=True)
@@ -196,7 +196,7 @@ class SATDataset(InMemoryDataset):
         if self.cleanup_raw:
             self._cleanup()
 
-    def _create_variable_clause_graph(self,clauses, n_vars):
+    def create_variable_clause_graph(self,clauses, n_vars):
         data = HeteroData()
         # data["var"].x = torch.arange(0, n_vars, dtype=torch.float).reshape(-1, 1)
         # data["clause"].x = torch.arange(0, len(clauses), dtype=torch.float).reshape(-1, 1)
@@ -252,7 +252,7 @@ class SATDataset(InMemoryDataset):
         return data
 
 
-    def _create_literal_clause_graph(self,clauses, n_vars):
+    def create_literal_clause_graph(self,clauses, n_vars):
         data = HeteroData()
         # data["literal"].x = torch.arange(0, n_vars * 2, dtype=torch.float).reshape(-1, 1)
         # data["clause"].x = torch.arange(0, len(clauses), dtype=torch.float).reshape(-1, 1)
@@ -314,7 +314,7 @@ class SATDataset(InMemoryDataset):
         return data
 
 
-    def _create_variable_graph(self,clauses, n_vars):
+    def create_variable_graph(self,clauses, n_vars):
         start = time.time()
         k = 0
         edge_list = set()
@@ -326,7 +326,7 @@ class SATDataset(InMemoryDataset):
 
             k += 1
             if k % 10000 == 0:
-                if time.time() - start > _MAX_TIME:
+                if time.time() - start > MAX_TIME:
                     raise TimeoutError("Timeout during graph creation")
 
             for i in range(len(abs_vars)):
@@ -362,7 +362,7 @@ class SATDataset(InMemoryDataset):
         return data
 
 
-    def _create_clause_graph(self,clauses, n_vars):
+    def create_clause_graph(self,clauses, n_vars):
         x = torch.zeros((len(clauses), 7), dtype=torch.float)
         start = time.time()
         k = 0
@@ -377,7 +377,7 @@ class SATDataset(InMemoryDataset):
                 neg_var = -var
                 k += 1
                 if k % 10000 == 0:
-                    if time.time() - start > _MAX_TIME:
+                    if time.time() - start > MAX_TIME:
                         raise TimeoutError("Timeout during graph creation")
                 if neg_var in clauses_for_lits:
                     for nc in clauses_for_lits[neg_var]:
@@ -411,7 +411,7 @@ class SATDataset(InMemoryDataset):
 
 
     # function from https://github.com/zhaoyu-li/G4SATBench
-    def _parse_cnf_file(self,file_path):
+    def parse_cnf_file(self,file_path):
         with open(file_path, "r") as f:
             lines = f.readlines()
 
@@ -438,26 +438,26 @@ class SATDataset(InMemoryDataset):
         return n_vars, clauses
 
 
-    def _process_file(self,instance, graph_type, pre_transform=None, homogeneous=True):
+    def process_file(self,instance, graph_type, pre_transform=None, homogeneous=True):
     
         gc.collect()
         original_file_path = instance["raw_file_names"]
 
 
-        n_vars, clauses = self._parse_cnf_file(original_file_path)
+        n_vars, clauses = self.parse_cnf_file(original_file_path)
 
         if graph_type == "vcg":
-            data = self._create_variable_clause_graph(clauses, n_vars)
+            data = self.create_variable_clause_graph(clauses, n_vars)
             if homogeneous:
                 data = data.to_homogeneous()
         elif graph_type == "cg":
-            data = self._create_clause_graph(clauses, n_vars)
+            data = self.create_clause_graph(clauses, n_vars)
         elif graph_type == "lcg":
-            data = self._create_literal_clause_graph(clauses, n_vars)
+            data = self.create_literal_clause_graph(clauses, n_vars)
             if homogeneous:
                 data = data.to_homogeneous()
         elif graph_type == "vg":
-            data = self._create_variable_graph(clauses, n_vars)
+            data = self.create_variable_graph(clauses, n_vars)
 
         
         try:
@@ -528,7 +528,7 @@ class SATDataset(InMemoryDataset):
         #generate the corresponding sat dataset
         with ProcessPoolExecutor(max_workers=64) as executor:       
             for _, instance in tqdm(self.instances_csv.iterrows()):
-                futures.append(executor.submit(self._process_file, instance.to_dict(), self.graph_type, self.pre_transform, True))
+                futures.append(executor.submit(self.process_file, instance.to_dict(), self.graph_type, self.pre_transform, True))
             # futures = [
             #     executor.submit(process_file, instance.to_dict(), self.graph_type)
             #     for _, instance in self.instances_csv.iterrows()
@@ -569,7 +569,7 @@ class SATDataset(InMemoryDataset):
             #torch.save((data, slices), self.processed_path)
 
         else:
-            download_and_unpack(source=self.source, raw_dir=self._raw_dir, processed_dir=self.processed_path, logger=_logger)
+            _download_and_unpack(source=self.source, raw_dir=self._raw_dir, processed_dir=self.processed_path, logger=logger)
 
             loader = self._load_sat_graphs
             loader_kwargs = {}
@@ -578,12 +578,12 @@ class SATDataset(InMemoryDataset):
             if self.pre_transform is not None:
                 data_list = [self.pre_transform(d) for d in data_list]
         self.save(data_list, self.processed_paths[0])
-        _logger.info(f"Saved processed dataset -> {self.processed_path}")
+        logger.info(f"Saved processed dataset -> {self.processed_path}")
 
 
     def _cleanup(self) -> None:
         if self._raw_dir.exists():
-            _logger.info(f"Cleaning up: {self._raw_dir}")
+            logger.info(f"Cleaning up: {self._raw_dir}")
             # remove only the dataset-specific temp folder
             for p in sorted(self._raw_dir.rglob("*"), reverse=True):
                 try:

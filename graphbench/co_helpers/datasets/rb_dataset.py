@@ -7,7 +7,7 @@ import numpy as np
 from torch_geometric.data import Data
 from torch_geometric.utils.convert import from_networkx
 
-from ._synthetic_dataset import SyntheticDataset
+from .synthetic_dataset import SyntheticDataset
 
 
 class RBDataset(SyntheticDataset):

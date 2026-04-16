@@ -23,8 +23,9 @@ from typing import Callable, Dict, List, Optional, Union
 
 from torch_geometric.data import Data, InMemoryDataset
 
-from graphbench._co_helpers import BADataset, ERDataset, RBDataset
-from graphbench._helpers import download_and_unpack, split_dataset
+from graphbench.co_helpers.datasets import BADataset, ERDataset, RBDataset
+from graphbench.helpers.split_dataset import split_dataset
+from graphbench.helpers.download import _download_and_unpack
 
 
 # (i) helper functions
@@ -33,12 +34,12 @@ from graphbench._helpers import download_and_unpack, split_dataset
 # (a) Utilities
 # -----------------------------------------------------------------------------#
 
-_logger = logging.getLogger(__name__)
-if not _logger.handlers:
+logger = logging.getLogger(__name__)
+if not logger.handlers:
     _h = logging.StreamHandler()
     _h.setFormatter(logging.Formatter("[%(levelname)s] %(message)s"))
-    _logger.addHandler(_h)
-_logger.setLevel(logging.INFO)
+    logger.addHandler(_h)
+logger.setLevel(logging.INFO)
 
 
 @dataclass(frozen=True)
@@ -75,37 +76,36 @@ class CODataset(InMemoryDataset):
         """
         #currently downloads everything at once for a single dataset. Up to the user to manually unpack it so far
         self.SOURCES: Dict[str, _SourceSpec] = {
-            "ba_small": _SourceSpec(
-                url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_CO/resolve/main/ba_small_mis_labeled.tar.gz",
-                raw_folder="co_ba_small",
-            ),
-            "er_small": _SourceSpec(
-                url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_CO/resolve/main/er_small_mis_labeled.tar.gz",
-                raw_folder="co_er_small",
-            ),
-            "rb_small": _SourceSpec(
-                url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_CO/resolve/main/rb_small_mis_labeled.tar.gz",
-                raw_folder="co_rb_small",
-            ),
-            "rb_large": _SourceSpec(
-                url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_CO/resolve/main/rb_large_mis_labeled.tar.gz",
-                raw_folder="co_rb_large",
-            ),
-            "er_large": _SourceSpec(
-                url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_CO/resolve/main/er_large_mis_labeled.tar.gz",
-                raw_folder="co_er_large",
-            ),
-            "ba_large": _SourceSpec(
-                url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_CO/resolve/main/ba_large_mis_labeled.tar.gz",
-                raw_folder="co_ba_large",
-            ),
-        }
+        "ba_small": _SourceSpec(
+            url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_CO/resolve/main/ba_small_mis_labeled.tar.gz",
+            raw_folder="co_ba_small",
+        ), 
+        "er_small": _SourceSpec(
+            url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_CO/resolve/main/er_small_mis_labeled.tar.gz",
+            raw_folder="co_er_small",
+        ),
+        "rb_small": _SourceSpec(
+            url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_CO/resolve/main/rb_small_mis_labeled.tar.gz",
+            raw_folder="co_rb_small",
+        ),
+        "rb_large": _SourceSpec(
+            url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_CO/resolve/main/rb_large_mis_labeled.tar.gz",
+            raw_folder="co_rb_large",
+        ),
+        "er_large": _SourceSpec(
+            url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_CO/resolve/main/er_large_mis_labeled.tar.gz",
+            raw_folder="co_er_large",
+        ),
+        "ba_large": _SourceSpec(
+            url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_CO/resolve/main/ba_large_mis_labeled.tar.gz",
+            raw_folder="co_ba_large",
+        ),
+    }
         self.LABEL_SOURCES : Dict[str, _SourceSpec] = {
-            "labels": _SourceSpec(
-                url="redacted",
-                raw_folder="supervised_labels",
-            ),
-        }
+        "labels": _SourceSpec(
+            url="redacted",
+            raw_folder="supervised_labels",
+        ),}
         self.root = root
         #self.name_temp = name.replace("_"," ")
         #self.dataset_name = self.name_temp.lower().split(" ")[0]
@@ -186,9 +186,9 @@ class CODataset(InMemoryDataset):
         if self.generate:
             data = self._generate(self.pre_transform, self.transform)
             self.save(data, self.processed_path)
-            _logger.info(f"Saved processed dataset -> {self.processed_path}")
+            logger.info(f"Saved processed dataset -> {self.processed_path}")
         else:
-            download_and_unpack(source=self.source, raw_dir=self._raw_dir, processed_dir=self.processed_path, logger=_logger)
+            _download_and_unpack(source=self.source, raw_dir=self._raw_dir, processed_dir=self.processed_path, logger=logger)
 
             loader = self._load_co_graphs
             loader_kwargs = {}
@@ -217,11 +217,11 @@ class CODataset(InMemoryDataset):
 
             #data, slices = self.collate(data_list)
             #torch.save((data, slices), self.processed_path)
-            _logger.info(f"Saved processed dataset -> {self.processed_path}")
+            logger.info(f"Saved processed dataset -> {self.processed_path}")
 
     def _cleanup(self) -> None:
         if self._raw_dir.exists():
-            _logger.info(f"Cleaning up: {self._raw_dir}")
+            logger.info(f"Cleaning up: {self._raw_dir}")
             # remove only the dataset-specific temp folder
             for p in sorted(self._raw_dir.rglob("*"), reverse=True):
                 try:
@@ -248,7 +248,7 @@ class CODataset(InMemoryDataset):
                 if fname == pattern]
     
 
-    def _load_labels(self):
+    def load_labels(self):
         labels_path = self._find_matching_files(task=self.target, directory=self.processed_path)
         #download the labels for the supervised tasks if needed
         return labels_path
@@ -264,3 +264,5 @@ class CODataset(InMemoryDataset):
     @property
     def processed_file_names(self) -> list[str]:
         return ['data.pt']
+    
+        
