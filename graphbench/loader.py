@@ -3,7 +3,7 @@ import os
 
 import requests
 
-from graphbench.co_helpers.split_dataset import split_dataset
+from graphbench.helpers.split_dataset import split_dataset
 
 
 class Loader():

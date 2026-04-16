@@ -24,7 +24,7 @@ from typing import Callable, Dict, Optional, Union
 from torch_geometric.data import InMemoryDataset
 
 from graphbench.co_helpers.datasets import BADataset, ERDataset, RBDataset
-from graphbench.co_helpers.split_dataset import split_dataset
+from graphbench.helpers.split_dataset import split_dataset
 from graphbench.helpers.download import _download_and_unpack
 
 
