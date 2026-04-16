@@ -19,6 +19,7 @@ Usage notes:
 
 import logging
 import os
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Dict, List, Optional, Union
 
@@ -27,7 +28,7 @@ import torch
 from torch_geometric.data import Data, InMemoryDataset
 from tqdm import tqdm
 
-from graphbench._helpers import download_and_unpack, SourceSpec
+from graphbench._helpers import download_and_unpack
 
 
 # (i) helper functions
@@ -44,6 +45,11 @@ if not _logger.handlers:
 _logger.setLevel(logging.INFO)
 
 
+@dataclass(frozen=True)
+class _SourceSpec:
+    url: str
+    raw_folder: str  # folder name inside tmp/ where data will appear
+
 class ChipDesignDataset(InMemoryDataset):
     def __init__(
             self,
@@ -57,8 +63,8 @@ class ChipDesignDataset(InMemoryDataset):
         load_preprocessed = False,
     ):
         # currently downloads everything at once for a single dataset. Up to the user to manually unpack it so far
-        self.SOURCES: Dict[str, SourceSpec] = {
-            "chipdesign": SourceSpec(
+        self.SOURCES: Dict[str, _SourceSpec] = {
+            "chipdesign": _SourceSpec(
                 url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_chipdesign/resolve/main/chipdesign.zip",
                 raw_folder="chipdesign",
             ),

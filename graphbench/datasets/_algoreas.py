@@ -22,13 +22,14 @@ Usage notes:
 
 import logging
 import os
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Dict, List, Optional, Union
 
 from torch_geometric.data import Data, InMemoryDataset
 
 from graphbench._algoreas_helpers import generate_algoreas_data
-from graphbench._helpers import download_and_unpack, SourceSpec
+from graphbench._helpers import download_and_unpack
 
 
 # (i) helper functions
@@ -44,6 +45,11 @@ if not _logger.handlers:
     _logger.addHandler(_h)
 _logger.setLevel(logging.INFO)
 
+
+@dataclass(frozen=True)
+class _SourceSpec:
+    url: str
+    raw_folder: str  # folder name inside tmp/ where data will appear
 
 class AlgoReasDataset(InMemoryDataset):
     def __init__(
@@ -79,32 +85,32 @@ class AlgoReasDataset(InMemoryDataset):
         """
 
         #currently downloads everything at once for a single dataset. Up to the user to manually unpack it so far
-        self.SOURCES: Dict[str, SourceSpec] = {
-            "topologicalorder": SourceSpec(
+        self.SOURCES: Dict[str, _SourceSpec] = {
+            "topologicalorder": _SourceSpec(
                 url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_Algoreas/resolve/main/topologicalorder.tar.gz",
                 raw_folder="topological_order",
             ),
-            "bipartitematching": SourceSpec(
+            "bipartitematching": _SourceSpec(
                 url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_Algoreas/resolve/main/bipartitematching.tar.gz",
                 raw_folder="bipartite_matching",
             ),
-            "mst": SourceSpec(
+            "mst": _SourceSpec(
                 url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_Algoreas/resolve/main/mst.tar.gz",
                 raw_folder="mst",
             ),
-            "steinertree": SourceSpec(
+            "steinertree": _SourceSpec(
                 url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_Algoreas/resolve/main/steinertree.tar.gz",
                 raw_folder="steiner_tree",
             ),
-            "bridges": SourceSpec(
+            "bridges": _SourceSpec(
                 url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_Algoreas/resolve/main/bridges.tar.gz",
                 raw_folder="bridges",
             ),
-            "maxclique": SourceSpec(
+            "maxclique": _SourceSpec(
                 url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_Algoreas/resolve/main/maxclique.tar.gz",
                 raw_folder="max_clique",
             ),
-            "flow": SourceSpec(
+            "flow": _SourceSpec(
                 url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_Algoreas/resolve/main/flow.tar.gz",
                 raw_folder="flow",
             )
