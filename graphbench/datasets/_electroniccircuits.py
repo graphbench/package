@@ -12,7 +12,6 @@ offers utilities for label normalization and dataset splitting.
 import json
 import logging
 import os
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Union
 
@@ -21,7 +20,7 @@ import torch
 import tqdm
 from torch_geometric.data import Data, InMemoryDataset
 
-from graphbench._helpers import download_and_unpack
+from graphbench._helpers import download_and_unpack, SourceSpec
 
 
 # (i) helper functions
@@ -37,11 +36,6 @@ if not _logger.handlers:
     _logger.addHandler(_h)
 _logger.setLevel(logging.INFO)
 
-
-@dataclass(frozen=True)
-class _SourceSpec:
-    url: str
-    raw_folder: str  # folder name inside tmp/ where data will appear
 
 class ECDataset(InMemoryDataset):
     def __init__(
@@ -71,28 +65,28 @@ class ECDataset(InMemoryDataset):
         - vout_norm_method (str): Normalization method for vout labels.
         """
         #currently downloads everything at once for a single dataset. Up to the user to manually unpack it so far
-        self.SOURCES: Dict[str, _SourceSpec] = {
-            "electronic_circuits_5_eff": _SourceSpec(
+        self.SOURCES: Dict[str, SourceSpec] = {
+            "electronic_circuits_5_eff": SourceSpec(
                 url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_ElectronicCircuits/resolve/main/ec_5.zip",
                 raw_folder="electronic_circuits_5_eff",
             ),
-            "electronic_circuits_5_vout": _SourceSpec(
+            "electronic_circuits_5_vout": SourceSpec(
                 url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_ElectronicCircuits/resolve/main/ec_5.zip",
                 raw_folder="electronic_circuits_5_vout",
             ),
-            "electronic_circuits_7_eff": _SourceSpec(
+            "electronic_circuits_7_eff": SourceSpec(
                 url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_ElectronicCircuits/resolve/main/ec_7.zip",
                 raw_folder="electronic_circuit_7_eff",
             ),
-            "electronic_circuits_7_vout": _SourceSpec(
+            "electronic_circuits_7_vout": SourceSpec(
                 url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_ElectronicCircuits/resolve/main/ec_7.zip",
                 raw_folder="electronic_circuits_7_vout",
             ),
-            "electronic_circuits_10_eff": _SourceSpec(
+            "electronic_circuits_10_eff": SourceSpec(
                 url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_ElectronicCircuits/resolve/main/ec_10.zip",
                 raw_folder="electronic_circuits_10_eff",
             ),
-            "electronic_circuits_10_vout": _SourceSpec(
+            "electronic_circuits_10_vout": SourceSpec(
                 url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_ElectronicCircuits/resolve/main/ec_10.zip",
                 raw_folder="electronic_circuits_10_vout",
             ),

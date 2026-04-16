@@ -17,14 +17,13 @@ The `name` argument selects among supported dataset variants (e.g. 'ba_small',
 
 import logging
 import os
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Dict, Optional, Union
 
 from torch_geometric.data import InMemoryDataset
 
 from graphbench._co_helpers import BADataset, ERDataset, RBDataset
-from graphbench._helpers import download_and_unpack, split_dataset
+from graphbench._helpers import download_and_unpack, split_dataset, SourceSpec
 
 
 # (i) helper functions
@@ -40,11 +39,6 @@ if not _logger.handlers:
     _logger.addHandler(_h)
 _logger.setLevel(logging.INFO)
 
-
-@dataclass(frozen=True)
-class _SourceSpec:
-    url: str
-    raw_folder: str  # folder name inside tmp/ where data will appear
 
 class CODataset(InMemoryDataset):
     def __init__(
@@ -75,35 +69,35 @@ class CODataset(InMemoryDataset):
 
         """
         #currently downloads everything at once for a single dataset. Up to the user to manually unpack it so far
-        self.SOURCES: Dict[str, _SourceSpec] = {
-            "ba_small": _SourceSpec(
+        self.SOURCES: Dict[str, SourceSpec] = {
+            "ba_small": SourceSpec(
                 url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_CO/resolve/main/ba_small_mis_labeled.tar.gz",
                 raw_folder="co_ba_small",
             ),
-            "er_small": _SourceSpec(
+            "er_small": SourceSpec(
                 url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_CO/resolve/main/er_small_mis_labeled.tar.gz",
                 raw_folder="co_er_small",
             ),
-            "rb_small": _SourceSpec(
+            "rb_small": SourceSpec(
                 url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_CO/resolve/main/rb_small_mis_labeled.tar.gz",
                 raw_folder="co_rb_small",
             ),
-            "rb_large": _SourceSpec(
+            "rb_large": SourceSpec(
                 url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_CO/resolve/main/rb_large_mis_labeled.tar.gz",
                 raw_folder="co_rb_large",
             ),
-            "er_large": _SourceSpec(
+            "er_large": SourceSpec(
                 url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_CO/resolve/main/er_large_mis_labeled.tar.gz",
                 raw_folder="co_er_large",
             ),
-            "ba_large": _SourceSpec(
+            "ba_large": SourceSpec(
                 url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_CO/resolve/main/ba_large_mis_labeled.tar.gz",
                 raw_folder="co_ba_large",
             ),
         }
 
-        self.LABEL_SOURCES : Dict[str, _SourceSpec] = {
-            "labels": _SourceSpec(
+        self.LABEL_SOURCES : Dict[str, SourceSpec] = {
+            "labels": SourceSpec(
                 url="redacted",
                 raw_folder="supervised_labels",
             ),

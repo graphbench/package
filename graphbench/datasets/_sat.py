@@ -14,7 +14,6 @@ import os
 import tempfile
 import time
 from concurrent.futures import ProcessPoolExecutor
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Dict, List, Optional, Union
 
@@ -27,7 +26,7 @@ from torch_geometric.data import Data, HeteroData, InMemoryDataset
 from torch_geometric.io import fs
 from tqdm import tqdm
 
-from graphbench._helpers import download_and_unpack
+from graphbench._helpers import download_and_unpack, SourceSpec
 
 
 # (0) Constants
@@ -57,12 +56,6 @@ if not _logger.handlers:
 _logger.setLevel(logging.INFO)
 
 
-
-@dataclass(frozen=True)
-class _SourceSpec:
-    url: str
-    raw_folder: str  # folder name inside tmp/ where data will appear
-
 class SATDataset(InMemoryDataset):
     def __init__(
         self,
@@ -84,34 +77,34 @@ class SATDataset(InMemoryDataset):
 
         #currently downloads everything at once for a single dataset. Up to the user to manually unpack it so far
 
-        self.SOURCES: Dict[str, _SourceSpec] = {
-            "sat_lcg_as": _SourceSpec(
+        self.SOURCES: Dict[str, SourceSpec] = {
+            "sat_lcg_as": SourceSpec(
                 url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_SAT/resolve/main/data_small_lcg_no_trans.pt.xz",
                 raw_folder="sat_lcg_as",
             ),
-            "sat_vcg_as": _SourceSpec(
+            "sat_vcg_as": SourceSpec(
                 url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_SAT/resolve/main/data_small_vcg_no_trans.pt.xz",
                 raw_folder="sat_vcg_as",
             ),
-            "sat_vg_as": _SourceSpec(
+            "sat_vg_as": SourceSpec(
                 url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_SAT/resolve/main/data_small_vg_no_trans.pt.xz",
                 raw_folder="sat_vg_as",
             ),
-            "sat_lcg_epm": _SourceSpec(
+            "sat_lcg_epm": SourceSpec(
                 url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_SAT/resolve/main/data_small_lcg_no_trans.pt.xz",
                 raw_folder="sat_lcg_epm",
             ),
-            "sat_vcg_epm": _SourceSpec(
+            "sat_vcg_epm": SourceSpec(
                 url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_SAT/resolve/main/data_small_vcg_no_trans.pt.xz",
                 raw_folder="sat_vcg_epm",
             ),
-            "sat_vg_epm": _SourceSpec(
+            "sat_vg_epm": SourceSpec(
                 url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_SAT/resolve/main/data_small_vg_no_trans.pt.xz",
                 raw_folder="sat_vg_epm",
             ),
         }
 
-        self.SOURCE_CSV = _SourceSpec(
+        self.SOURCE_CSV = SourceSpec(
             url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_SAT/resolve/main/sat_csv.zip",
             raw_folder="sat_csv",
         )

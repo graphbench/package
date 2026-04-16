@@ -9,13 +9,12 @@ which then can be used in downstream tasks. Furthermore, support for generation 
 
 import logging
 import os
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Dict, List, Optional, Union
 
 from torch_geometric.data import Data, InMemoryDataset
 
-from graphbench._helpers import download_and_unpack
+from graphbench._helpers import download_and_unpack, SourceSpec
 
 
 # (i) helper functions
@@ -30,12 +29,6 @@ if not _logger.handlers:
     _h.setFormatter(logging.Formatter("[%(levelname)s] %(message)s"))
     _logger.addHandler(_h)
 _logger.setLevel(logging.INFO)
-
-
-@dataclass(frozen=True)
-class _SourceSpec:
-    url: str
-    raw_folder: str  # folder name inside tmp/ where data will appear
 
 
 class WeatherforecastingDataset(InMemoryDataset):
@@ -59,8 +52,8 @@ class WeatherforecastingDataset(InMemoryDataset):
         **kwargs
     ):
         #currently downloads everything at once for a single dataset. Up to the user to manually unpack it so far
-        self.SOURCES: Dict[str, _SourceSpec] = {
-            "weather_64": _SourceSpec(
+        self.SOURCES: Dict[str, SourceSpec] = {
+            "weather_64": SourceSpec(
                 url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_Weather/resolve/main/https%3A/huggingface.co/datasets/log-rwth-aachen/Graphbench_Weather/tree/main",
                 raw_folder="weather_64",
             ),
