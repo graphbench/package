@@ -558,7 +558,12 @@ class SATDataset(InMemoryDataset):
             #torch.save((data, slices), self.processed_path)
 
         else:
-            download_and_unpack(source=self.source, raw_dir=self._raw_dir, processed_dir=self.processed_path, logger=_logger)
+            download_and_unpack(
+                source=self.source,
+                raw_dir=self._raw_dir,
+                processed_dir=self.processed_path,
+                logger=_logger,
+            )
 
             loader = self._load_sat_graphs
             loader_kwargs = {}

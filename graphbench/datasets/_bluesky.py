@@ -261,8 +261,8 @@ class BlueSkyDataset(InMemoryDataset):
 
     def _prepare(self) -> None:
         # (b) Download & unpack helpers
-        download_and_unpack(self.source, self._raw_dir, Path(self.processed_dir), logger=_logger)
-        download_and_unpack(self.source_features, self._raw_feature_dir, Path(self.processed_dir), logger=_logger)
+        download_and_unpack(self.source, self._raw_dir, self.processed_path.parent, logger=_logger)
+        download_and_unpack(self.source_features, self._raw_feature_dir, self.processed_path.parent, logger=_logger)
         # Pick default ts_train_end and gap per dataset type
        
         if self.name in {'bluesky_quotes', 'bluesky_replies', 'bluesky_reposts'}:

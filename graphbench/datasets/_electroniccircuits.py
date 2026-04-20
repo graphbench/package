@@ -130,7 +130,12 @@ class ECDataset(InMemoryDataset):
         if self.generate:
             self._generate(None, None)
         else:
-            download_and_unpack(source=self.source, raw_dir=self._raw_dir, processed_dir=self.processed_path, logger=_logger)
+            download_and_unpack(
+                source=self.source,
+                raw_dir=self._raw_dir,
+                processed_dir=self.processed_path.parent,
+                logger=_logger,
+            )
 
             train_json = self.load_json(os.path.join(self._raw_dir, f"dataset_{self.component_size}_train.json"))
             valid_json = self.load_json(os.path.join(self._raw_dir, f"dataset_{self.component_size}_valid.json"))
