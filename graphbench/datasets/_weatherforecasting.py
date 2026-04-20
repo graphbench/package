@@ -7,14 +7,13 @@ that prepares graph-based weather forecasting examples. It downloads preprocesse
 which then can be used in downstream tasks. Furthermore, support for generation of the dataset is given (currently disabled)
 """
 
-import logging
 import os
 from pathlib import Path
 from typing import Callable, Dict, List, Optional, Union
 
 from torch_geometric.data import Data, InMemoryDataset
 
-from graphbench._helpers import download_and_unpack, SourceSpec
+from graphbench._helpers import download_and_unpack, SourceSpec, get_logger
 
 
 # (i) helper functions
@@ -23,12 +22,7 @@ from graphbench._helpers import download_and_unpack, SourceSpec
 # (a) Utilities
 # -----------------------------------------------------------------------------#
 
-_logger = logging.getLogger(__name__)
-if not _logger.handlers:
-    _h = logging.StreamHandler()
-    _h.setFormatter(logging.Formatter("[%(levelname)s] %(message)s"))
-    _logger.addHandler(_h)
-_logger.setLevel(logging.INFO)
+_logger = get_logger(__name__)
 
 
 class WeatherforecastingDataset(InMemoryDataset):

@@ -1,9 +1,9 @@
-import csv
 import os
 
 import requests
 
 from graphbench._helpers import split_dataset
+from graphbench._metadata import expand_dataset_names
 
 
 class Loader():
@@ -39,39 +39,7 @@ class Loader():
             FileNotFoundError: When `datasets.csv` is not found in the
                 module directory.
         """
-        csv_path = os.path.join(os.path.dirname(__file__), 'datasets.csv')
-        result = []
-        if not os.path.exists(csv_path):
-            raise FileNotFoundError(f"CSV file not found: {csv_path}")
-
-        # Support passing a single dataset name string or an iterable of names
-        if isinstance(self.dataset_names, str):
-            target_names = {self.dataset_names}
-        else:
-            try:
-                target_names = set(self.dataset_names)
-            except Exception:
-                target_names = {self.dataset_names}
-
-        with open(csv_path, newline='') as csvfile:
-            # skipinitialspace handles cases like: header ", datasets" or values with leading spaces
-            reader = csv.DictReader(csvfile, skipinitialspace=True)
-            for row in reader:
-                # normalize keys (strip any accidental whitespace in header names)
-                row = { (k.strip() if isinstance(k, str) else k): v for k, v in row.items() }
-
-                name = row.get('dataset_name')
-                # fallback: some CSVs might have a header with a leading space
-                datasets_str = row.get('datasets') or row.get(' datasets') or ''
-
-                if not name:
-                    continue
-
-                if name in target_names:
-                    # datasets_str may be empty or contain only semicolons; split and strip entries
-                    datasets = [ds.strip() for ds in datasets_str.split(';') if ds and ds.strip()]
-                    result.extend(datasets)
-        return result
+        return expand_dataset_names(self.dataset_names)
 
     def _check_for_updates(self):
             # Download the remote version file

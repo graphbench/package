@@ -9,7 +9,6 @@ The class handles downloading SAT datasets and supplementing labels via csv file
 """
 
 import gc
-import logging
 import os
 import tempfile
 import time
@@ -26,7 +25,7 @@ from torch_geometric.data import Data, HeteroData, InMemoryDataset
 from torch_geometric.io import fs
 from tqdm import tqdm
 
-from graphbench._helpers import download_and_unpack, SourceSpec
+from graphbench._helpers import download_and_unpack, SourceSpec, get_logger
 
 
 # (0) Constants
@@ -48,12 +47,7 @@ _MEDIUM_N_CLAUSES = 90_000
 # (a) Utilities
 # -----------------------------------------------------------------------------#
 
-_logger = logging.getLogger(__name__)
-if not _logger.handlers:
-    _h = logging.StreamHandler()
-    _h.setFormatter(logging.Formatter("[%(levelname)s] %(message)s"))
-    _logger.addHandler(_h)
-_logger.setLevel(logging.INFO)
+_logger = get_logger(__name__)
 
 
 class SATDataset(InMemoryDataset):

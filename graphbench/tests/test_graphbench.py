@@ -43,11 +43,11 @@ class TestGraphBenchEvaluatorFull(unittest.TestCase):
         if not HAS_GRAPHBENCH:
             self.skipTest("GraphBench package not found")
             
-        # Patch pandas.read_csv to avoid needing master.csv
-        self.patcher = patch('pandas.read_csv')
-        self.mock_read_csv = self.patcher.start()
+        # Patch evaluator's metadata loader to avoid needing master.csv
+        self.patcher = patch("graphbench._evaluator.get_master_df")
+        self.mock_get_master_df = self.patcher.start()
         self.mock_df = MagicMock()
-        self.mock_read_csv.return_value = self.mock_df
+        self.mock_get_master_df.return_value = self.mock_df
 
     def tearDown(self):
         self.patcher.stop()

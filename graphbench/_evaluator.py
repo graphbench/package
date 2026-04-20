@@ -1,5 +1,3 @@
-import os
-
 import numpy as np
 import pandas as pd
 import torch
@@ -8,6 +6,7 @@ from torch import Tensor
 from torch_geometric.data import Batch
 from torch_geometric.utils import remove_self_loops, unbatch, unbatch_edge_index
 
+from graphbench._metadata import get_master_df
 from graphbench._helpers import VectorizedCircuitSimulator
 from graphbench._weatherforecasting_helpers import (
     compute_latitude_weights,
@@ -36,7 +35,7 @@ class Evaluator():
 
     def __init__(self, name):
         self.name = name 
-        self.csv_info = pd.read_csv(os.path.join(os.path.dirname(__file__), 'master.csv'), index_col=0, keep_default_na=False)
+        self.csv_info = get_master_df()
 
         self.task = self.csv_info.loc[self.name]['task']
         self.metric = self.csv_info.loc[self.name]['metric'].split(';')
