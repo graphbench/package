@@ -25,6 +25,7 @@ Code Example
 
    model = # Your torch model
    dataset_name = # Name of the task or list of tasks
+   root = # Directory where datasets will be stored
    pre_filter = # PyTorch Geometric filter matrix
    pre_transform = # PyTorch Geometric-like transform during loading
    transform = # PyTorch Geometric-like transform at computation time
@@ -32,7 +33,7 @@ Code Example
    # Setting up the components of graphbench
    evaluator = graphbench.Evaluator(dataset_name)
    optimizer = graphbench.Optimizer(optimization_args, training_method)
-   loader = graphbench.Loader(dataset_name, pre_filter, pre_transform, transform)
+   loader = graphbench.Loader(root, dataset_name, pre_filter, pre_transform, transform)
 
    # Load a GraphBench dataset and get splits
    dataset = loader.load()
