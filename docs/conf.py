@@ -29,6 +29,7 @@ extensions = [
     "sphinx.ext.autodoc",      # Required to read Python docstrings and autogenerate .rst files
     "sphinx.ext.napoleon",     # Allows Sphinx to parse Google-style docstrings
     "sphinx.ext.viewcode",     # Adds links to the source code
+    "sphinx.ext.intersphinx",  # Allows linking to external documentation
 ]
 
 exclude_patterns = ["_build"]
@@ -77,3 +78,14 @@ autodoc_typehints = "both"
 
 # This project uses Google-style docstrings only
 napoleon_numpy_docstring = False
+
+
+
+# -- Intersphinx configuration -----------------------------------------------
+# https://www.sphinx-doc.org/en/master/usage/extensions/intersphinx.html#configuration
+
+intersphinx_mapping = {
+    "python": ("https://docs.python.org/3", None),
+    "torch": ("https://docs.pytorch.org/docs/main", None),
+    "torch_geometric": ("https://pytorch-geometric.readthedocs.io/en/latest", None),
+}
