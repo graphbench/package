@@ -114,8 +114,8 @@ class ChipDesignDataset(InMemoryDataset):
         download_and_unpack(
             source=self.source,
             raw_dir=self._raw_dir,
+            processed_dir=self.processed_path,
             logger=_logger,
-            processed_dir=self.processed_path.parent,
         )
 
         # Load and convert the raw files to PyG Data objects

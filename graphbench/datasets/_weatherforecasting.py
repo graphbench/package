@@ -111,8 +111,8 @@ class WeatherforecastingDataset(InMemoryDataset):
             download_and_unpack(
                 source=self.source,
                 raw_dir=self._raw_dir,
+                processed_dir=self.processed_path,
                 logger=_logger,
-                processed_dir=self.processed_path.parent,
             )
             loader = self._load_weather_graphs
             loader_kwargs = {}
