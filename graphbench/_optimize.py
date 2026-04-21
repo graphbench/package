@@ -11,7 +11,7 @@ class Optimize():
     def __init__(self, args, train, cs=None) -> None:
         self.args = args
         self.train = train
-        self.cs = cs
+        self.configspace = cs if cs is not None else self._get_default_configuration_space(args)
         #Given a training function compatible with the SMAC framework this method
         #allows for optimization using SMAC with multi-fidelity support
         #The training function must take args (from argparse) and a budget (either steps or epochs) as input and return an evaluation metric.
@@ -19,21 +19,10 @@ class Optimize():
 
 
     def optimize_model(self,):
-        self._optimize(self.args)
-
-
+        self._optimize()
 
     def _optimize(self):
-
         self._tune()
-
-    def _get_configuration_space(self, cs):
-        
-        if self.cs is None:
-            return self._get_default_configuration_space(self.args)
-        else: 
-            return cs
-
 
     def _get_default_configuration_space(self, args):
         cs = ConfigurationSpace(
@@ -46,18 +35,18 @@ class Optimize():
         )
         return cs
 
-
     def _tune(self):
         #if not args.disable_task_defaults:
         #    args = load_task_defaults(args)
 
         #args.disable_task_defaults = True
-        self.config = self._get_configuration_space(self.cs)
-        for hp in self.cs:
-            delattr(self.args, hp)
+        hp_names = list(self.configspace.keys())
+        for hp in hp_names:
+            if hasattr(self.args, hp):
+                delattr(self.args, hp)
 
         scenario = Scenario(
-            configspace=self.config,
+            configspace=self.configspace,
             output_directory=self.args.path + "/smac",
             min_budget=self.args.min_fidelity,
             max_budget=self.args.num_steps,
@@ -66,14 +55,13 @@ class Optimize():
             seed=self.args.seed,
         )
 
-
         smac = MultiFidelityFacade(scenario=scenario, target_function=self._target_function)
 
         smac.optimize()
 
-    def _target_function(self,config,seed, budget):
+    def _target_function(self,config, seed, budget):
             cur_args = copy.deepcopy(self.args)
-            for hp in self.cs:
+            for hp in self.configspace.keys():
                 setattr(cur_args, hp, config[hp])
 
             return self.train(cur_args, int(budget))

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import logging
 import os
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -11,7 +10,7 @@ import torch
 from torch import Tensor
 from torch_geometric.data import Data, InMemoryDataset
 
-from graphbench._helpers import download_and_unpack, SourceSpec
+from graphbench._helpers import download_and_unpack, SourceSpec, get_logger
 
 
 TimeStamp: TypeAlias = Union[int, str]
@@ -26,12 +25,7 @@ _DEFAULT_PREDICTION_GAPS = [42, 29, 27]
 # (a) Utilities
 # -----------------------------------------------------------------------------#
 
-_logger = logging.getLogger(__name__)
-if not _logger.handlers:
-    _h = logging.StreamHandler()
-    _h.setFormatter(logging.Formatter("[%(levelname)s] %(message)s"))
-    _logger.addHandler(_h)
-_logger.setLevel(logging.INFO)
+_logger = get_logger(__name__)
 
 
 # -----------------------------------------------------------------------------#

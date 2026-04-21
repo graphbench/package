@@ -15,7 +15,6 @@ The `name` argument selects among supported dataset variants (e.g. 'ba_small',
 'er_large'), and `split` must be one of 'train', 'val', or 'test'.
 """
 
-import logging
 import os
 from pathlib import Path
 from typing import Callable, Dict, Optional, Union
@@ -23,7 +22,7 @@ from typing import Callable, Dict, Optional, Union
 from torch_geometric.data import InMemoryDataset
 
 from graphbench._co_helpers import BADataset, ERDataset, RBDataset
-from graphbench._helpers import download_and_unpack, split_dataset, SourceSpec
+from graphbench._helpers import download_and_unpack, split_dataset, SourceSpec, get_logger
 
 
 # (i) helper functions
@@ -32,12 +31,7 @@ from graphbench._helpers import download_and_unpack, split_dataset, SourceSpec
 # (a) Utilities
 # -----------------------------------------------------------------------------#
 
-_logger = logging.getLogger(__name__)
-if not _logger.handlers:
-    _h = logging.StreamHandler()
-    _h.setFormatter(logging.Formatter("[%(levelname)s] %(message)s"))
-    _logger.addHandler(_h)
-_logger.setLevel(logging.INFO)
+_logger = get_logger(__name__)
 
 
 class CODataset(InMemoryDataset):

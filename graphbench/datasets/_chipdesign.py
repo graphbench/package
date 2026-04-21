@@ -17,7 +17,6 @@ Usage notes:
     cache to `root/chipdesign/chipdesign/processed/<name>_<split>.pt`.
 """
 
-import logging
 import os
 from pathlib import Path
 from typing import Callable, Dict, List, Optional, Union
@@ -27,7 +26,7 @@ import torch
 from torch_geometric.data import Data, InMemoryDataset
 from tqdm import tqdm
 
-from graphbench._helpers import download_and_unpack, SourceSpec
+from graphbench._helpers import download_and_unpack, SourceSpec, get_logger
 
 
 # (i) helper functions
@@ -36,12 +35,7 @@ from graphbench._helpers import download_and_unpack, SourceSpec
 # (a) Utilities
 # -----------------------------------------------------------------------------#
 
-_logger = logging.getLogger(__name__)
-if not _logger.handlers:
-    _h = logging.StreamHandler()
-    _h.setFormatter(logging.Formatter("[%(levelname)s] %(message)s"))
-    _logger.addHandler(_h)
-_logger.setLevel(logging.INFO)
+_logger = get_logger(__name__)
 
 
 class ChipDesignDataset(InMemoryDataset):

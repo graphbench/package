@@ -10,7 +10,6 @@ offers utilities for label normalization and dataset splitting.
 """
 
 import json
-import logging
 import os
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Union
@@ -20,7 +19,7 @@ import torch
 import tqdm
 from torch_geometric.data import Data, InMemoryDataset
 
-from graphbench._helpers import download_and_unpack, SourceSpec
+from graphbench._helpers import download_and_unpack, SourceSpec, get_logger
 
 
 # (i) helper functions
@@ -29,12 +28,7 @@ from graphbench._helpers import download_and_unpack, SourceSpec
 # (a) Utilities
 # -----------------------------------------------------------------------------#
 
-_logger = logging.getLogger(__name__)
-if not _logger.handlers:
-    _h = logging.StreamHandler()
-    _h.setFormatter(logging.Formatter("[%(levelname)s] %(message)s"))
-    _logger.addHandler(_h)
-_logger.setLevel(logging.INFO)
+_logger = get_logger(__name__)
 
 
 class ECDataset(InMemoryDataset):
