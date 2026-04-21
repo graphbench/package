@@ -42,6 +42,7 @@ exclude_patterns = ["_build"]
 html_theme = "pyg_sphinx_theme"
 html_static_path = ["_static"]
 html_logo = ("_static/GraphBench_logo_text_black.svg")
+html_favicon = ("_static/GraphBench_logo.svg")
 
 
 
