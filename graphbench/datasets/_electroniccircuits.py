@@ -16,7 +16,7 @@ from typing import Any, Callable, Dict, List, Optional, Union
 
 import numpy as np
 import torch
-import tqdm
+from tqdm import tqdm
 from torch_geometric.data import Data, InMemoryDataset
 
 from graphbench._helpers import download_and_unpack, SourceSpec, get_logger
