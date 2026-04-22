@@ -1,28 +1,6 @@
-"""
-algorithmic reasoning  dataset loader
------------------------
-
-This module provides an `AlgoReasDataset` class implementing a PyTorch Geometric
-`InMemoryDataset` for the Algorithmic Reasoning (AlgoReas) datasets used in the
-project. The dataset class supports two modes:
-
-- generate: programmatically build synthetic graphs using various NetworkX
-    random graph generators (controlled by `algoreas_helpers.algoreas_utils`).
-- download & load: fetch preprocessed `.pt` files from the dataset `raw`
-    directory (via `helpers.download._download_and_unpack`) and load them into
-    PyG `Data` objects.
-
-Usage notes:
-- The dataset `name` is expected in the form: "{task}_{num_nodes}_{difficulty}".
-    Example: `bipartitematching_16_easy`.
-- The class writes a processed file named
-    `{dataset_name}_{num_nodes}_{difficulty}_{split}.pt` into the dataset folder
-    under `root/algoreas/<raw_folder>/processed/`.
-"""
-
 import os
 from pathlib import Path
-from typing import Callable, Dict, List, Optional, Union
+from typing import Callable, Dict, List, Literal, Optional, Union
 
 from torch_geometric.data import Data, InMemoryDataset
 
@@ -40,15 +18,161 @@ _logger = get_logger(__name__)
 
 
 class AlgoReasDataset(InMemoryDataset):
+    """
+    Algorithmic reasoning (AlgoReas) datasets.
+
+    Note:
+        This class should only be used directly when generating new datasets.
+        To access provided datasets, please consider using :class:`graphbench.Loader`.
+        The sections below give details on the data available through the :class:`graphbench.Loader` interface.
+
+
+    Overview:
+        On the algorithmic reasoning datasets, the goal is to predict the solution of a classical graph problem ("task")
+        given an input graph.
+
+        We provide datasets for 7 different tasks:
+
+        - Minimum spanning tree
+        - Maximum clique
+        - Topological sort
+        - Maximum flow
+        - Bipartite matching
+        - Bridge finding
+        - Steiner tree
+
+        For each of these, we provide graphs on three difficulty levels, easy, medium, and hard.
+
+        The provided datasets include a mixture of graphs from different graph generators, depending on the difficulty
+        setting.
+        In total, we used six graph generators:
+
+        - Erdős-Rényi
+        - Newman-Watts-Strogatz
+        - Barabási-Albert
+        - Dual Barabási-Albert
+        - Powerlaw Cluster
+        - Stochastic Block Model
+
+        The parameters used for each generator depend on the algorithmic reasoning task;
+        please refer to the `GraphBench paper <https://arxiv.org/abs/2512.04475>`__ for the exact values used and for
+        further graph generation details.
+        Our datasets combine the generators as follows.
+
+        .. list-table::
+           :header-rows: 1
+
+           * - Difficulty
+             - Training
+             - Validation/Testing
+           * - Easy
+             - [All 6 generators]
+             - [All 6 generators]
+           * - Medium
+             - Erdős-Rényi, Barabási-Albert, Stochastic Block Model
+             - [All 6 generators]
+           * - Hard
+             - Erdős-Rényi
+             - [All 6 generators]
+
+        Training and validation graphs contain 16 nodes each, while test graphs contain 128 nodes.
+
+        We also provide additional size generalization datasets for each task, with 192, 256, 384, and 512 nodes each.
+        Note that these only contain test graphs, and the training and validation graphs from the main datasets should
+        be used for training.
+
+
+    Graph Attributes:
+        The features and additional information available with each graph depend on the algorithmic reasoning task.
+        Note that if available, node features (``data.x``) are always of size ``[num_nodes, 1]`` and edge features
+        (``data.edge_attr``) are always of size ``[num_edges, 1]``.
+        The size of the target (``data.y``) depends on the task.
+
+        .. list-table::
+           :header-rows: 1
+
+           * - Task
+             - Node features
+             - Edge features
+             - Target
+           * - Minimum spanning tree
+             - None
+             - Edge weights
+             - Edges contained in the minimum spanning tree, size ``[num_edges, 1]``
+           * - Maximum clique
+             - None
+             - None
+             - Nodes belonging to the maximum clique, size ``[num_nodes, 1]``
+           * - Topological sort
+             - None
+             - None
+             - Topological rank, size ``[num_nodes, 1]``
+           * - Maximum flow
+             - 1 for the source node, 2 for the sink node, and 0 for all other nodes
+             - Edge weights
+             - Maximum flow computation, size ``[1]``
+           * - Bipartite matching
+             - None
+             - Edge weights
+             - Edges contained in the maximum matching, size ``[num_edges, 1]``
+           * - Bridge finding
+             - None
+             - None
+             - Edges that are bridges, size ``[num_edges, 1]``
+           * - Steiner Tree
+             - 0, except for terminal nodes
+             - Edge weights
+             - Edges contained in the Steiner tree, size ``[num_edges, 1]``
+
+
+    List of Available Datasets:
+        We provide one dataset for each combination of task and difficulty level.
+        These can be loaded with ``{task}_{difficulty}``, where task is one of
+        ``mst``,
+        ``maxclique``,
+        ``topologicalorder``,
+        ``flow``,
+        ``bipartite_matching``,
+        ``bridges``,
+        or ``steinertree``,
+        and difficulty is one of ``easy``, ``medium``, or ``hard``.
+
+        For example:
+
+        .. code:: python
+
+           from graphbench import Loader
+           # loads the minimum spanning tree dataset with easy difficulty
+           dataset = Loader("data", "mst_easy").load()
+
+        In addition to this, we provide convenience identifiers for loading all datasets of a given difficulty level,
+        using ``algorithmic_reasoning_easy``, ``algorithmic_reasoning_medium``, and ``algorithmic_reasoning_hard``.
+
+        The size generalization datasets can be loaded with ``TODO``.
+        Note that these only include test graphs.
+
+
+    Usage Notes:
+        The dataset class supports two modes:
+
+        1. Generate synthetic graphs using NetworkX random graph generators
+        2. Download and load pre-generated graphs.
+           We recommend against using this directly; use the interface provided by :class:`graphbench.Loader` instead
+
+        The class writes a processed file named ``{dataset_name}_{num_nodes}_{difficulty}_{split}.pt``
+        into the dataset folder under ``root/algoreas/<raw_folder>/processed/``.
+    """
+
     def __init__(
         self,
         name: str,
-        split: str,
+        split: Literal["train", "val", "test"],
         root: Union[str, Path],
         transform: Optional[Callable] = None,
         pre_transform: Optional[Callable] = None,
         pre_filter: Optional[Callable] = None,
-        generate: Optional[bool] = False,
+        generate: bool = False,
+        # TODO these are currently unused. should either be implemented or removed from the public API
         num_nodes: Optional[int] = 16,
         difficulty: Optional[str] = "easy",
         follower_subgraph: bool = False,
@@ -57,24 +181,22 @@ class AlgoReasDataset(InMemoryDataset):
         load_preprocessed=False,
     ):
         """
-        Initialize the AlgoReasDataset.
-
-        Parameters
-        - name (str): Dataset identifier in the form "{task}_{num_nodes}_{difficulty}".
-        - split (str): One of 'train', 'val', 'test'.
-        - root (str|Path): Root directory where `algoreas` dataset folder lives.
-        - transform, pre_transform (callable | None): Optional PyG transforms.
-        - generate (bool): If True, generate synthetic graphs instead of downloading.
-        - num_nodes (int): Number of nodes (used when generating datasets programmatically).
-        - difficulty (str): Difficulty level used for sampling configuration.
-        - follower_subgraph (bool): (Unused) placeholder for follower-subgraph extraction.
-        - cleanup_raw (bool): If True, remove raw files after processing.
-        - load_preprocessed (bool): If True, load existing processed objects instead of regenerating.
-
+        Args:
+            name: Dataset identifier in the form ``{task}_{difficulty}_{num_nodes}``,
+                  e.g. ``bipartitematching_easy_16``.
+                  Note that this differs from the names provided to :class:`graphbench.Loader`.
+            split: Whether to load the train, validation, or test split of the dataset.
+            root: Root directory where the ``algoreas`` dataset folder lives.
+            transform: Optional PyG transform applied to data objects before every access.
+            pre_transform: Optional PyG transform applied before saving data objects to disk.
+            pre_filter: A function that indicates whether a data object should be included in the final dataset.
+            generate: If True, generate synthetic graphs instead of downloading.
+            num_nodes: Number of nodes (used when generating datasets).
+            difficulty: Difficulty level used for sampling configuration.
+            follower_subgraph: (Unused) placeholder for follower-subgraph extraction.
+            cleanup_raw: If True, remove raw files after processing.
+            load_preprocessed: If True, load existing processed objects instead of regenerating.
         """
-        
-
-
 
         #currently downloads everything at once for a single dataset. Up to the user to manually unpack it so far
         self.SOURCES: Dict[str, SourceSpec] = {
@@ -243,11 +365,9 @@ class AlgoReasDataset(InMemoryDataset):
 
     @property
     def processed_file_names(self) -> list[str]:
-        """
-        Provide the expected processed filename for PyG compatibility. This
-        is primarily for API compatibility; loading/saving is handled by the
-        class via `self.processed_path`.
-        """
+        # Provide the expected processed filename for PyG compatibility. This
+        # is primarily for API compatibility; loading/saving is handled by the
+        # class via `self.processed_path`.
         return [f"{self.dataset_name}_{self.difficulty}_{self.num_nodes}_{self.split}.pt"]
     
 

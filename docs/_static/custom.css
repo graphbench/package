@@ -1,0 +1,7 @@
+/* larger section headers */
+.rst-content .rubric {
+    font-size: 1.4em;
+    font-weight: bold;
+    margin-top: 1.2em;
+    margin-bottom: 0.6em;
+}

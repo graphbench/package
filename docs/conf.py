@@ -39,9 +39,9 @@ exclude_patterns = ["_build"]
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
-# Use the PyTorch Geometric theme
-html_theme = "pyg_sphinx_theme"
+html_theme = "pyg_sphinx_theme"  # Use the PyTorch Geometric theme...
 html_static_path = ["_static"]
+html_css_files = ["custom.css"]  # ...with some adjustments
 html_logo = ("_static/GraphBench_logo_text_black.svg")
 html_favicon = ("_static/GraphBench_logo.svg")
 
@@ -65,11 +65,11 @@ autodoc_mock_imports = [
     "ConfigSpace",
 ]
 
-# Include both class docstring and __init__() docstring
-autoclass_content = "both"
-
 # Show type hints in both the signature and the description
 autodoc_typehints = "both"
+
+# Display the signature of the __init__ method separately from the class description
+autodoc_class_signature = "separated"
 
 
 
@@ -77,7 +77,12 @@ autodoc_typehints = "both"
 # https://www.sphinx-doc.org/en/master/usage/extensions/napoleon.html#configuration
 
 # This project uses Google-style docstrings only
+napoleon_google_docstring = True
 napoleon_numpy_docstring = False
+
+# These names will also be recognized as section headers in Google-style docstrings,
+# in addition to the default ones like "Args", "Returns", etc.
+napoleon_custom_sections = ["Overview", "Graph Attributes", "List of Available Datasets", "Usage Notes"]
 
 
 
