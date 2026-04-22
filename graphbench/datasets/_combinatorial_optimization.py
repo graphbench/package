@@ -177,7 +177,12 @@ class CODataset(InMemoryDataset):
             self.save(data, self.processed_path)
             _logger.info(f"Saved processed dataset -> {self.processed_path}")
         else:
-            download_and_unpack(source=self.source, raw_dir=self.raw_dir, processed_dir=Path(self.processed_dir), logger=_logger)
+            download_and_unpack(
+                source=self.source,
+                raw_dir=self.raw_dir,
+                processed_dir=self.processed_path,
+                logger=_logger,
+            )
 
             filepaths = self._find_matching_files(task=self.dataset_name, directory=self.raw_dir)
             self.load(filepaths[0])

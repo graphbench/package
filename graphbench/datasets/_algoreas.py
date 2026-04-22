@@ -164,7 +164,10 @@ class AlgoReasDataset(InMemoryDataset):
             # Download and unpack into the raw directory, and then load the
             # first matching processed file using `_load_algoreas_graphs`.
             download_and_unpack(
-                source=self.source, raw_dir=self._raw_dir, logger=_logger, processed_dir=self.processed_path
+                source=self.source,
+                raw_dir=self._raw_dir,
+                processed_dir=self.processed_path,
+                logger=_logger,
             )
 
             # The loader places the data into this InMemoryDataset instance

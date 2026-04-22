@@ -6,6 +6,5 @@ train.sh
 /wandb/
 /log/
 
-/graphbench_data/
 /graphbench_lib.egg-info/
 .DS_Store

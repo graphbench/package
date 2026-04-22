@@ -111,7 +111,12 @@ class ChipDesignDataset(InMemoryDataset):
 
         # Download/unpack the archive into `self._raw_dir` and provide a
         # `processed_dir` hint for helpers that may extract processed artifacts.
-        download_and_unpack(source=self.source, raw_dir=self._raw_dir, logger=_logger, processed_dir=self.processed_path)
+        download_and_unpack(
+            source=self.source,
+            raw_dir=self._raw_dir,
+            processed_dir=self.processed_path,
+            logger=_logger,
+        )
 
         # Load and convert the raw files to PyG Data objects
         data_list = self._load_chipdesign_graphs()

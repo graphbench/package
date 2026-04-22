@@ -122,7 +122,12 @@ class SATDataset(InMemoryDataset):
         csv_dir = Path(root) / self.SOURCE_CSV.raw_folder
         if not csv_dir.exists():
             print(f"Downloading supplementary CSV files to {csv_dir}...")
-            download_and_unpack(source=self.SOURCE_CSV, raw_dir=csv_dir, processed_dir=csv_dir / "processed", logger=_logger)
+            download_and_unpack(
+                source=self.SOURCE_CSV,
+                raw_dir=csv_dir,
+                processed_dir=csv_dir / "processed",
+                logger=_logger,
+            )
         self.solver = solver
         self.instances_csv = pd.read_csv(Path(root) /"sat_csv"/ "instances_new.csv")
         #self.dataset_name = self.name_temp.lower().split(" ")[0]
@@ -558,7 +563,12 @@ class SATDataset(InMemoryDataset):
             #torch.save((data, slices), self.processed_path)
 
         else:
-            download_and_unpack(source=self.source, raw_dir=self._raw_dir, processed_dir=self.processed_path, logger=_logger)
+            download_and_unpack(
+                source=self.source,
+                raw_dir=self._raw_dir,
+                processed_dir=self.processed_path,
+                logger=_logger,
+            )
 
             loader = self._load_sat_graphs
             loader_kwargs = {}

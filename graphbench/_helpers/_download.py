@@ -23,8 +23,11 @@ def download_and_unpack(source: SourceSpec, raw_dir: Union[str, Path], processed
     url = source.url
     filename = url.split("/")[-1]
     local_path = raw_dir / filename
-    #local_path = raw_dir / "data_small_vg_no_trans.pt.xz"
-    if not processed_dir.exists() or not any(Path(processed_dir).iterdir()):
+    # local_path = raw_dir / "data_small_vg_no_trans.pt.xz"
+    processed_dir = Path(processed_dir)
+    # Some dataset loaders pass a file path. Treat it as a directory check.
+    processed_dir_check = processed_dir.parent if processed_dir.suffix else processed_dir
+    if not processed_dir_check.exists() or not any(processed_dir_check.iterdir()):
         # the directory doesn’t exist or it exists but is empty (or the processed dir is missing/empty)
         _stream_download(url, local_path, logger)
         if local_path.suffixes[-2:] == [".pt",".xz"]:

@@ -16,7 +16,7 @@ from typing import Any, Callable, Dict, List, Optional, Union
 
 import numpy as np
 import torch
-import tqdm
+from tqdm import tqdm
 from torch_geometric.data import Data, InMemoryDataset
 
 from graphbench._helpers import download_and_unpack, SourceSpec, get_logger
@@ -130,7 +130,12 @@ class ECDataset(InMemoryDataset):
         if self.generate:
             self._generate(None, None)
         else:
-            download_and_unpack(source=self.source, raw_dir=self._raw_dir, processed_dir=self.processed_path, logger=_logger)
+            download_and_unpack(
+                source=self.source,
+                raw_dir=self._raw_dir,
+                processed_dir=self.processed_path,
+                logger=_logger,
+            )
 
             train_json = self.load_json(os.path.join(self._raw_dir, f"dataset_{self.component_size}_train.json"))
             valid_json = self.load_json(os.path.join(self._raw_dir, f"dataset_{self.component_size}_valid.json"))
