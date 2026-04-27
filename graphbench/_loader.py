@@ -1,9 +1,89 @@
 import os
+from typing import Callable, Dict, List, Optional
 
 import requests
 
 from graphbench._helpers import split_dataset
 from graphbench._metadata import expand_dataset_names
+
+
+DatasetFactory = Callable[[str, str, Optional[str]], object]
+
+
+class SplitStrategy:
+    def build(self, factory: DatasetFactory, dataset_name: str) -> Dict[str, object]:
+        raise NotImplementedError
+
+
+class FixedSplitStrategy(SplitStrategy):
+    def __init__(self, split_map: Optional[Dict[str, str]] = None) -> None:
+        self.split_map = split_map or {"train": "train", "valid": "val", "test": "test"}
+
+    def build(self, factory: DatasetFactory, dataset_name: str) -> Dict[str, object]:
+        return {
+            key: factory(dataset_name, split_name, None)
+            for key, split_name in self.split_map.items()
+        }
+
+
+class RatioSplitStrategy(SplitStrategy):
+    def __init__(self, train: float, valid: float, test: float) -> None:
+        self.train_ratio = train
+        self.valid_ratio = valid
+        self.test_ratio = test
+
+    def build(self, factory: DatasetFactory, dataset_name: str) -> Dict[str, object]:
+        dataset = factory(dataset_name, "train", None)
+        train_dataset, valid_dataset, test_dataset = split_dataset(
+            dataset,
+            self.train_ratio,
+            self.valid_ratio,
+            self.test_ratio,
+        )
+        return {
+            "train": train_dataset,
+            "valid": valid_dataset,
+            "test": test_dataset,
+        }
+
+
+class AlgoReasSplitStrategy(SplitStrategy):
+    def build(self, factory: DatasetFactory, dataset_name: str) -> Dict[str, object]:
+        if "sizegen" in dataset_name:
+            return {
+                "train": None,
+                "valid": None,
+                "test": factory(dataset_name, "test", dataset_name),
+            }
+
+        dataset = factory(dataset_name, "train", f"{dataset_name}_16")
+        train_dataset, valid_dataset, _ = split_dataset(dataset, 0.99, 0.01, 0)
+        test_suffix = "64" if "flow" in dataset_name else "128"
+        test_dataset = factory(dataset_name, "test", f"{dataset_name}_{test_suffix}")
+        return {
+            "train": train_dataset,
+            "valid": valid_dataset,
+            "test": test_dataset,
+        }
+
+
+class DatasetRegistry:
+    def __init__(self) -> None:
+        self._entries: List[tuple[Callable[[str], bool], DatasetFactory, SplitStrategy]] = []
+
+    def register(
+        self,
+        matcher: Callable[[str], bool],
+        factory: DatasetFactory,
+        split_strategy: SplitStrategy,
+    ) -> None:
+        self._entries.append((matcher, factory, split_strategy))
+
+    def build(self, dataset_name: str) -> Dict[str, object]:
+        for matcher, factory, split_strategy in self._entries:
+            if matcher(dataset_name):
+                return split_strategy.build(factory, dataset_name)
+        raise ValueError(f"Dataset {dataset_name} is not supported.")
 
 
 class Loader():
@@ -24,6 +104,43 @@ class Loader():
         if self.generate_fallback:
             self.generate = True
             print("Activated fallback to generate dataset if not found.")
+
+        self._registry = DatasetRegistry()
+        self._registry.register(
+            lambda name: "algoreas" in name,
+            self._make_algoreas_dataset,
+            AlgoReasSplitStrategy(),
+        )
+        self._registry.register(
+            lambda name: "bluesky" in name,
+            self._make_bluesky_dataset,
+            FixedSplitStrategy(),
+        )
+        self._registry.register(
+            lambda name: "chipdesign" in name,
+            self._make_chipdesign_dataset,
+            FixedSplitStrategy(),
+        )
+        self._registry.register(
+            lambda name: "weather" in name,
+            self._make_weather_dataset,
+            RatioSplitStrategy(0.8, 0.1, 0.1),
+        )
+        self._registry.register(
+            lambda name: "co" in name,
+            self._make_co_dataset,
+            RatioSplitStrategy(0.7, 0.15, 0.15),
+        )
+        self._registry.register(
+            lambda name: "sat" in name,
+            self._make_sat_dataset,
+            RatioSplitStrategy(0.8, 0.1, 0.1),
+        )
+        self._registry.register(
+            lambda name: "electronic_circuits" in name,
+            self._make_ec_dataset,
+            FixedSplitStrategy(),
+        )
 
     def _get_dataset_names(self):
         """Read `datasets.csv` and return expanded dataset identifiers.
@@ -82,63 +199,100 @@ class Loader():
         return self.data_list
         
     def _loader(self, dataset_name):
-        
+        return self._registry.build(dataset_name)
 
-        if 'algoreas' in dataset_name:
-            from graphbench.datasets import AlgoReasDataset
-            # Special handling for sizegen datasets
-            if 'sizegen' in dataset_name:
-                train_dataset, valid_dataset = None, None
-                test_dataset =  AlgoReasDataset(root=self.root, name=dataset_name, pre_filter=self.pre_filter, pre_transform=self.pre_transform, transform=self.transform, split="test", generate=self.generate)
-            else:
-                dataset =  AlgoReasDataset(root=self.root, name=f"{dataset_name}_16", pre_filter=self.pre_filter, pre_transform=self.pre_transform, transform=self.transform, split="train", generate=self.generate)
-                train_dataset, valid_dataset, _ = split_dataset(dataset, 0.99, 0.01, 0)
-                if 'flow' in dataset_name:
-                    test_dataset =  AlgoReasDataset(root=self.root, name=f"{dataset_name}_64", pre_filter=self.pre_filter, pre_transform=self.pre_transform, transform=self.transform, split="test", generate=self.generate)
-                else:
-                    test_dataset =  AlgoReasDataset(root=self.root, name=f"{dataset_name}_128", pre_filter=self.pre_filter, pre_transform=self.pre_transform, transform=self.transform, split="test", generate=self.generate)
+    def _make_algoreas_dataset(self, dataset_name: str, split: str, name_override: Optional[str] = None):
+        from graphbench.datasets import AlgoReasDataset
 
-        elif 'bluesky' in dataset_name:
-            from graphbench.datasets import BlueSkyDataset
-            train_dataset =  BlueSkyDataset(root=self.root, name=dataset_name, pre_filter=self.pre_filter, pre_transform=self.pre_transform, transform=self.transform, split="train", follower_subgraph=False, cleanup_raw=True,load_preprocessed=True)
-            valid_dataset =  BlueSkyDataset(root=self.root, name=dataset_name, pre_filter=self.pre_filter, pre_transform=self.pre_transform, transform=self.transform, split="val", follower_subgraph=False, cleanup_raw=True,load_preprocessed=True)
-            test_dataset =  BlueSkyDataset(root=self.root, name=dataset_name, pre_filter=self.pre_filter, pre_transform=self.pre_transform, transform=self.transform, split="test", follower_subgraph=False, cleanup_raw=True,load_preprocessed=True)
+        return AlgoReasDataset(
+            root=self.root,
+            name=name_override or dataset_name,
+            pre_filter=self.pre_filter,
+            pre_transform=self.pre_transform,
+            transform=self.transform,
+            split=split,
+            generate=self.generate,
+        )
 
-        elif 'chipdesign' in dataset_name:
-            from graphbench.datasets import ChipDesignDataset
-            train_dataset =  ChipDesignDataset(root=self.root, name=dataset_name, pre_filter=self.pre_filter, pre_transform=self.pre_transform, transform=self.transform, split="train")
-            valid_dataset =  ChipDesignDataset(root=self.root, name=dataset_name, pre_filter=self.pre_filter, pre_transform=self.pre_transform, transform=self.transform, split="val")
-            test_dataset =  ChipDesignDataset(root=self.root, name=dataset_name, pre_filter=self.pre_filter, pre_transform=self.pre_transform, transform=self.transform, split="test")
+    def _make_bluesky_dataset(self, dataset_name: str, split: str, name_override: Optional[str] = None):
+        from graphbench.datasets import BlueSkyDataset
 
-        elif 'weather' in dataset_name:
-            from graphbench.datasets import WeatherforecastingDataset
-            dataset =  WeatherforecastingDataset(root=self.root, name=dataset_name, pre_filter=self.pre_filter, pre_transform=self.pre_transform, transform=self.transform, split="train")
-            train_dataset, valid_dataset, test_dataset = split_dataset(dataset, 0.8, 0.1, 0.1)
-        elif 'co' in dataset_name:
-            from graphbench.datasets import CODataset
-            dataset =  CODataset(root=self.root, name=dataset_name, pre_filter=self.pre_filter, pre_transform=self.pre_transform, transform=self.transform, split="train", generate=self.generate)
-            train_dataset, valid_dataset, test_dataset = split_dataset(dataset, 0.7, 0.15, 0.15)
+        return BlueSkyDataset(
+            root=self.root,
+            name=dataset_name,
+            pre_filter=self.pre_filter,
+            pre_transform=self.pre_transform,
+            transform=self.transform,
+            split=split,
+            follower_subgraph=False,
+            cleanup_raw=True,
+            load_preprocessed=True,
+        )
 
-        elif 'sat' in dataset_name:
-            from graphbench.datasets import SATDataset
-            dataset =  SATDataset(root=self.root, name=dataset_name, pre_filter=self.pre_filter, pre_transform=self.pre_transform, transform=self.transform, split="train", generate=self.generate, solver=self.solver, use_satzilla_features=self.use_satzilla_features)
-            train_dataset, valid_dataset, test_dataset = split_dataset(dataset, 0.8, 0.1, 0.1)
-        elif 'electronic_circuits' in dataset_name:
-            from graphbench.datasets import ECDataset
-            train_dataset =  ECDataset(root=self.root, name=dataset_name, pre_filter=self.pre_filter, pre_transform=self.pre_transform, transform=self.transform, split="train", generate=self.generate)
-            valid_dataset =  ECDataset(root=self.root, name=dataset_name, pre_filter=self.pre_filter, pre_transform=self.pre_transform, transform=self.transform, split="val", generate=self.generate)
-            test_dataset =  ECDataset(root=self.root, name=dataset_name, pre_filter=self.pre_filter, pre_transform=self.pre_transform, transform=self.transform, split="test", generate=self.generate)
+    def _make_chipdesign_dataset(self, dataset_name: str, split: str, name_override: Optional[str] = None):
+        from graphbench.datasets import ChipDesignDataset
 
-        else:
-            raise ValueError(f"Dataset {dataset_name} is not supported.")
+        return ChipDesignDataset(
+            root=self.root,
+            name=dataset_name,
+            pre_filter=self.pre_filter,
+            pre_transform=self.pre_transform,
+            transform=self.transform,
+            split=split,
+        )
 
+    def _make_weather_dataset(self, dataset_name: str, split: str, name_override: Optional[str] = None):
+        from graphbench.datasets import WeatherforecastingDataset
 
+        return WeatherforecastingDataset(
+            root=self.root,
+            name=dataset_name,
+            pre_filter=self.pre_filter,
+            pre_transform=self.pre_transform,
+            transform=self.transform,
+            split=split,
+        )
 
-        return {
-            "train": train_dataset, 
-            "valid": valid_dataset,
-            "test": test_dataset
-        }
+    def _make_co_dataset(self, dataset_name: str, split: str, name_override: Optional[str] = None):
+        from graphbench.datasets import CODataset
+
+        return CODataset(
+            root=self.root,
+            name=dataset_name,
+            pre_filter=self.pre_filter,
+            pre_transform=self.pre_transform,
+            transform=self.transform,
+            split=split,
+            generate=self.generate,
+        )
+
+    def _make_sat_dataset(self, dataset_name: str, split: str, name_override: Optional[str] = None):
+        from graphbench.datasets import SATDataset
+
+        return SATDataset(
+            root=self.root,
+            name=dataset_name,
+            pre_filter=self.pre_filter,
+            pre_transform=self.pre_transform,
+            transform=self.transform,
+            split=split,
+            generate=self.generate,
+            solver=self.solver,
+            use_satzilla_features=self.use_satzilla_features,
+        )
+
+    def _make_ec_dataset(self, dataset_name: str, split: str, name_override: Optional[str] = None):
+        from graphbench.datasets import ECDataset
+
+        return ECDataset(
+            root=self.root,
+            name=dataset_name,
+            pre_filter=self.pre_filter,
+            pre_transform=self.pre_transform,
+            transform=self.transform,
+            split=split,
+            generate=self.generate,
+        )
 
 
 if __name__ == "__main__":
