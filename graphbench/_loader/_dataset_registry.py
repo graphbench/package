@@ -1,4 +1,4 @@
-from typing import Callable, Dict, List
+from typing import Any, Callable, Dict, List
 
 from ._split_strategies import DatasetFactory, SplitStrategy
 
@@ -15,7 +15,7 @@ class DatasetRegistry:
     ) -> None:
         self._entries.append((matcher, factory, split_strategy))
 
-    def build(self, dataset_name: str) -> Dict[str, object]:
+    def build(self, dataset_name: str) -> Dict[str, Any]:
         for matcher, factory, split_strategy in self._entries:
             if matcher(dataset_name):
                 return split_strategy.build(factory, dataset_name)

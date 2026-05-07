@@ -151,7 +151,7 @@ class TestGraphBenchLoaderBehavior(unittest.TestCase):
         loader = Loader(
             root="/tmp",
             dataset_names="sat",
-            solver="minisat",
+            sat_solver="minisat",
             use_satzilla_features=True,
         )
         train_ds = MagicMock(name="train")

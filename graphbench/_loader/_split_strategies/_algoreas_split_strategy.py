@@ -1,11 +1,11 @@
-from typing import Dict
+from typing import Any, Dict
 
 from graphbench._helpers import split_dataset
 from ._split_strategy import DatasetFactory, SplitStrategy
 
 
 class AlgoReasSplitStrategy(SplitStrategy):
-    def build(self, factory: DatasetFactory, dataset_name: str) -> Dict[str, object]:
+    def build(self, factory: DatasetFactory, dataset_name: str) -> Dict[str, Any]:
         if "sizegen" in dataset_name:
             return {
                 "train": None,
