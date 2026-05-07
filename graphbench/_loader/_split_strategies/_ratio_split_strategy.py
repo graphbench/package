@@ -1,11 +1,5 @@
-from typing import Dict, TYPE_CHECKING
-
 from graphbench._helpers import split_dataset
-from ._split_strategy import DatasetFactory, SplitStrategy
-
-
-if TYPE_CHECKING:
-    from torch_geometric.data import InMemoryDataset
+from ._split_strategy import DatasetFactory, SplitStrategy, TrainValTestSet
 
 
 class RatioSplitStrategy(SplitStrategy):
@@ -14,7 +8,7 @@ class RatioSplitStrategy(SplitStrategy):
         self.valid_ratio = valid
         self.test_ratio = test
 
-    def build(self, factory: DatasetFactory, dataset_name: str) -> Dict[str, InMemoryDataset]:
+    def build(self, factory: DatasetFactory, dataset_name: str) -> TrainValTestSet:
         dataset = factory(dataset_name, "train", None)
         train_dataset, valid_dataset, test_dataset = split_dataset(
             dataset,

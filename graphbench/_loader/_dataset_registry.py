@@ -1,10 +1,6 @@
-from typing import Callable, Dict, List, TYPE_CHECKING
+from typing import Callable, List
 
-from ._split_strategies import DatasetFactory, SplitStrategy
-
-
-if TYPE_CHECKING:
-    from torch_geometric.data import InMemoryDataset
+from ._split_strategies import DatasetFactory, SplitStrategy, TrainValTestSet
 
 
 class DatasetRegistry:
@@ -19,7 +15,7 @@ class DatasetRegistry:
     ) -> None:
         self._entries.append((matcher, factory, split_strategy))
 
-    def build(self, dataset_name: str) -> Dict[str, InMemoryDataset]:
+    def build(self, dataset_name: str) -> TrainValTestSet:
         for matcher, factory, split_strategy in self._entries:
             if matcher(dataset_name):
                 return split_strategy.build(factory, dataset_name)
