@@ -19,7 +19,7 @@ import os
 from pathlib import Path
 from typing import Callable, Dict, Optional, Union
 
-from torch_geometric.data import InMemoryDataset
+from torch_geometric.data import Data, InMemoryDataset
 
 from graphbench._co_helpers import BADataset, ERDataset, RBDataset
 from graphbench._helpers import download_and_unpack, split_dataset, SourceSpec, get_logger
@@ -40,9 +40,9 @@ class CODataset(InMemoryDataset):
         name: str,
         split: str,
         root: Union[str, Path],
-        transform: Optional[Callable] = None,
-        pre_transform: Optional[Callable] = None,
-        pre_filter: Optional[Callable] = None,
+        transform: Optional[Callable[[Data], Data]] = None,
+        pre_transform: Optional[Callable[[Data], Data]] = None,
+        pre_filter: Optional[Callable[[Data], bool]] = None,
         target: Optional[str] = None,
         generate: Optional[bool] = False,
         cleanup_raw: bool = True,
@@ -90,7 +90,7 @@ class CODataset(InMemoryDataset):
             ),
         }
 
-        self.LABEL_SOURCES : Dict[str, SourceSpec] = {
+        self.LABEL_SOURCES: Dict[str, SourceSpec] = {
             "labels": SourceSpec(
                 url="redacted",
                 raw_folder="supervised_labels",

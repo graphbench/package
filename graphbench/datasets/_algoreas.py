@@ -168,9 +168,9 @@ class AlgoReasDataset(InMemoryDataset):
         name: str,
         split: Literal["train", "val", "test"],
         root: Union[str, Path],
-        transform: Optional[Callable] = None,
-        pre_transform: Optional[Callable] = None,
-        pre_filter: Optional[Callable] = None,
+        transform: Optional[Callable[[Data], Data]] = None,
+        pre_transform: Optional[Callable[[Data], Data]] = None,
+        pre_filter: Optional[Callable[[Data], bool]] = None,
         generate: bool = False,
         # TODO these are currently unused. should either be implemented or removed from the public API
         num_nodes: Optional[int] = 16,

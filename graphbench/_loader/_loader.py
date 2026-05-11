@@ -20,9 +20,9 @@ class Loader():
         self,
         root: Union[str, Path],
         dataset_names: Iterable[str],
-        pre_filter: Optional[Callable[[Data], bool]] = None,
-        pre_transform: Optional[Callable[[Data], Data]] = None,
         transform: Optional[Callable[[Data], Data]] = None,
+        pre_transform: Optional[Callable[[Data], Data]] = None,
+        pre_filter: Optional[Callable[[Data], bool]] = None,
         generate_fallback: bool = False,
         update: bool = False,
         sat_solver: Optional[str] = None,
@@ -30,9 +30,9 @@ class Loader():
     ) -> None:
         self.root = root
         self.dataset_names = dataset_names
-        self.pre_filter = pre_filter
-        self.pre_transform = pre_transform
         self.transform = transform
+        self.pre_transform = pre_transform
+        self.pre_filter = pre_filter
         self.generate_fallback = generate_fallback
         self.data_list: List[TrainValTestSet] = []
         self.update = update

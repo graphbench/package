@@ -35,9 +35,9 @@ class WeatherforecastingDataset(InMemoryDataset):
         name: str,
         split: str,
         root: Union[str, Path],
-        transform: Optional[Callable] = None,
-        pre_transform: Optional[Callable] = None,
-        pre_filter: Optional[Callable] = None,
+        transform: Optional[Callable[[Data], Data]] = None,
+        pre_transform: Optional[Callable[[Data], Data]] = None,
+        pre_filter: Optional[Callable[[Data], bool]] = None,
         generate: Optional[bool] = False,
         size : Optional[int] = 64,
         # TODO: This should be removed in the future -- the user will download these files
