@@ -1,5 +1,6 @@
+from collections.abc import Iterable
 import os
-from typing import List
+from typing import List, Union
 
 import pandas as pd
 
@@ -46,7 +47,7 @@ def get_datasets_df():
     return df
 
 
-def expand_dataset_names(dataset_names) -> List[str]:
+def expand_dataset_names(dataset_names: Union[str, Iterable[str]]) -> List[str]:
     if isinstance(dataset_names, str):
         target_names = {dataset_names}
     else:

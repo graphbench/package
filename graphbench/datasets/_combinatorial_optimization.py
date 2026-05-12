@@ -37,11 +37,11 @@ class CODataset(BaseGraphDataset):
     def __init__(
         self,
         name: str,
-        split: str,
+        split: Literal["train", "val", "test"],
         root: Union[str, Path],
-        transform: Optional[Callable] = None,
-        pre_transform: Optional[Callable] = None,
-        pre_filter: Optional[Callable] = None,
+        transform: Optional[Callable[[Data], Data]] = None,
+        pre_transform: Optional[Callable[[Data], Data]] = None,
+        pre_filter: Optional[Callable[[Data], bool]] = None,
         target: Optional[str] = None,
         generate: Optional[bool] = False,
         num_samples: Optional[int] = None,
@@ -91,7 +91,7 @@ class CODataset(BaseGraphDataset):
             ),
         }
 
-        self.LABEL_SOURCES : Dict[str, SourceSpec] = {
+        self.LABEL_SOURCES: Dict[str, SourceSpec] = {
             "labels": SourceSpec(
                 url="redacted",
                 raw_folder="supervised_labels",

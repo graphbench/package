@@ -12,7 +12,7 @@ offers utilities for label normalization and dataset splitting.
 import json
 import os
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Callable, Dict, List, Literal, Optional, Union
 
 import numpy as np
 import torch
@@ -36,11 +36,11 @@ class ECDataset(BaseGraphDataset):
     def __init__(
         self,
         name: str,
-        split: str,
+        split: Literal["train", "val", "test"],
         root: Union[str, Path],
-        transform: Optional[Callable] = None,
-        pre_transform: Optional[Callable] = None,
-        pre_filter: Optional[Callable] = None,
+        transform: Optional[Callable[[Data], Data]] = None,
+        pre_transform: Optional[Callable[[Data], Data]] = None,
+        pre_filter: Optional[Callable[[Data], bool]] = None,
         generate: Optional[bool] = False,
         cleanup_raw: bool = True,
         target_vout : Optional[float] = None,

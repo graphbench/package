@@ -9,7 +9,7 @@ which then can be used in downstream tasks. Furthermore, support for generation 
 
 import os
 from pathlib import Path
-from typing import Callable, Dict, List, Optional, Union
+from typing import Callable, Dict, List, Literal, Optional, Union
 
 from torch_geometric.data import Data
 
@@ -34,11 +34,11 @@ class WeatherforecastingDataset(BaseGraphDataset):
     def __init__(
             self,
         name: str,
-        split: str,
+        split: Literal["train", "val", "test"],
         root: Union[str, Path],
-        transform: Optional[Callable] = None,
-        pre_transform: Optional[Callable] = None,
-        pre_filter: Optional[Callable] = None,
+        transform: Optional[Callable[[Data], Data]] = None,
+        pre_transform: Optional[Callable[[Data], Data]] = None,
+        pre_filter: Optional[Callable[[Data], bool]] = None,
         generate: Optional[bool] = False,
         size : Optional[int] = 64,
         # TODO: This should be removed in the future -- the user will download these files

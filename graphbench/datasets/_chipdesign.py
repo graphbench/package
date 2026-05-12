@@ -19,7 +19,7 @@ Usage notes:
 
 import os
 from pathlib import Path
-from typing import Callable, Dict, List, Optional, Union
+from typing import Callable, Dict, List, Literal, Optional, Union
 
 import numpy as np
 import torch
@@ -43,11 +43,11 @@ class ChipDesignDataset(BaseGraphDataset):
     def __init__(
             self,
         name: str,
-        split: str,
+        split: Literal["train", "val", "test"],
         root: Union[str, Path],
-        transform: Optional[Callable] = None,
-        pre_transform: Optional[Callable] = None,
-        pre_filter: Optional[Callable] = None,
+        transform: Optional[Callable[[Data], Data]] = None,
+        pre_transform: Optional[Callable[[Data], Data]] = None,
+        pre_filter: Optional[Callable[[Data], bool]] = None,
         cleanup_raw: bool = False,  # TODO Disabling this for now since it leads to errors on my machine
         # TODO: This should be removed in the future -- the user will download these files
         load_preprocessed = False,

@@ -14,7 +14,7 @@ import tempfile
 import time
 from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
-from typing import Callable, Dict, List, Optional, Union
+from typing import Callable, Dict, List, Literal, Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -55,11 +55,11 @@ class SATDataset(BaseGraphDataset):
     def __init__(
         self,
         name: str,
-        split: str,
+        split: Literal["train", "val", "test"],
         root: Union[str, Path],
-        transform: Optional[Callable] = None,
-        pre_transform: Optional[Callable] = None,
-        pre_filter: Optional[Callable] = None,
+        transform: Optional[Callable[[Data], Data]] = None,
+        pre_transform: Optional[Callable[[Data], Data]] = None,
+        pre_filter: Optional[Callable[[Data], bool]] = None,
         generate: Optional[bool] = False,
         use_satzilla_features: Optional[bool] =False,
         cleanup_raw: bool = True,
