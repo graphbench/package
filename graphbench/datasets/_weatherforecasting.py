@@ -7,6 +7,8 @@ that prepares graph-based weather forecasting examples. It downloads preprocesse
 which then can be used in downstream tasks. Furthermore, support for generation of the dataset is given (currently disabled)
 """
 
+from __future__ import annotations
+
 import os
 from pathlib import Path
 from typing import Callable, Dict, List, Literal, Optional, Union
@@ -14,7 +16,7 @@ from typing import Callable, Dict, List, Literal, Optional, Union
 from torch_geometric.data import Data
 
 from graphbench._helpers import download_and_unpack, SourceSpec, get_logger
-from ._base import BaseGraphDataset
+from ._base import GraphDataset
 
 
 # (i) helper functions
@@ -26,7 +28,7 @@ from ._base import BaseGraphDataset
 _logger = get_logger(__name__)
 
 
-class WeatherforecastingDataset(BaseGraphDataset):
+class WeatherforecastingDataset(GraphDataset):
     """
     Benchmark dataset class for weather forecasting graph data.
     Handles downloading, processing, and loading splits for PyG experiments.
@@ -60,8 +62,10 @@ class WeatherforecastingDataset(BaseGraphDataset):
         self.generate = generate
         self.split = split
         self.source = self.SOURCES[self.name]
+        self._logger = _logger
         self.load_preprocessed = load_preprocessed
         self.size = size
+        
         self.weather_dir = Path(root) / "weatherforecasting"
         self._raw_dir = (self.weather_dir / self.SOURCES[self.name].raw_folder) / "raw"
         self.processed_path = self.weather_dir / self.SOURCES[self.name].raw_folder / "processed" / f"{self.name}.pt"
@@ -122,11 +126,6 @@ class WeatherforecastingDataset(BaseGraphDataset):
 
 
 
-    def _cleanup(self) -> None:
-        """
-        Remove temporary raw data files for this dataset split.
-        """
-        self._cleanup_path(self._raw_dir, logger=_logger)
 
 
     def _load_weather_graphs(self) -> List[Data]:

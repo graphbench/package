@@ -1,3 +1,4 @@
+from __future__ import annotations
 """
 chipdesign dataset loader
 -------------------------
@@ -27,7 +28,7 @@ from torch_geometric.data import Data
 from tqdm import tqdm
 
 from graphbench._helpers import download_and_unpack, SourceSpec, get_logger
-from ._base import BaseGraphDataset
+from ._base import GraphDataset
 
 
 # (i) helper functions
@@ -39,7 +40,7 @@ from ._base import BaseGraphDataset
 _logger = get_logger(__name__)
 
 
-class ChipDesignDataset(BaseGraphDataset):
+class ChipDesignDataset(GraphDataset):
     def __init__(
             self,
         name: str,
@@ -68,6 +69,7 @@ class ChipDesignDataset(BaseGraphDataset):
 
         self.split = split
         self.source = self.SOURCES[self.name]
+        self._logger = _logger
         self.cleanup_raw = cleanup_raw
         self.load_preprocessed = load_preprocessed
 
@@ -115,9 +117,6 @@ class ChipDesignDataset(BaseGraphDataset):
         """
         data_list = self._load_chipdesign_graphs()
         return data_list
-
-    def _cleanup(self) -> None:
-        self._cleanup_path(self._raw_dir, logger=_logger)
 
     def _load_chipdesign_graphs(self) -> List[Data]:
         """

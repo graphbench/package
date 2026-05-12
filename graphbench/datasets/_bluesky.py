@@ -11,7 +11,7 @@ from torch import Tensor
 from torch_geometric.data import Data
 
 from graphbench._helpers import download_and_unpack, SourceSpec, get_logger
-from ._base import BaseGraphDataset
+from ._base import GraphDataset
 
 
 TimeStamp: TypeAlias = Union[int, str]
@@ -144,7 +144,7 @@ def _add_edge_time(df: pd.DataFrame, format='%Y%m%d%H%M', index=2) -> Tuple[Tens
 # (d) Dataset
 # -----------------------------------------------------------------------------#
 
-class BlueSkyDataset(BaseGraphDataset):
+class BlueSkyDataset(GraphDataset):
     """
     A compact PyG InMemoryDataset for BlueSky graphs.
 
@@ -232,6 +232,7 @@ class BlueSkyDataset(BaseGraphDataset):
         self.split = split
         self.source = self.SOURCES_RAW[self.name]
         self.source_features = self.SOURCES[self.name]
+        self._logger = _logger
         self.cleanup_raw = cleanup_raw
         self.load_preprocessed = load_preprocessed
         self.pre_transform = pre_transform
@@ -329,9 +330,6 @@ class BlueSkyDataset(BaseGraphDataset):
             return (t0, t1)
         else:
             raise ValueError(f"Unsupported split: {self.split}")
-
-    def _cleanup(self) -> None:
-        self._cleanup_path(self._raw_dir, logger=_logger)
 
     # -------------------------------------------------------------------------#
     # (i) Graph Processing

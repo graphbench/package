@@ -1,9 +1,10 @@
 from pathlib import Path
+from abc import ABC, abstractmethod
 
 from torch_geometric.data import InMemoryDataset
 
 
-class BaseGraphDataset(InMemoryDataset):
+class GraphDataset(InMemoryDataset, ABC):
     """Shared lifecycle utilities for GraphBench datasets."""
 
     @staticmethod
@@ -27,10 +28,12 @@ class BaseGraphDataset(InMemoryDataset):
         except OSError:
             pass
 
+    @abstractmethod
     def _prepare(self) -> None:
         """Optional pre-step for downloading/unpacking before loading graphs."""
         return None
 
+    @abstractmethod
     def _load_graphs(self):
         """Return a list of Data objects ready for filtering and transforms."""
         raise NotImplementedError
@@ -39,7 +42,7 @@ class BaseGraphDataset(InMemoryDataset):
         raw_dir = getattr(self, "_raw_dir", None)
         if raw_dir is None:
             return
-        self._cleanup_path(raw_dir)
+        self._cleanup_path(raw_dir, logger=getattr(self, "_logger", None))
 
     def _clear_processed_cache(self, processed_path, logger=None):
         processed_path = Path(processed_path)
@@ -102,3 +105,6 @@ class BaseGraphDataset(InMemoryDataset):
         self.load(resolved_load_path)
         if cleanup_raw:
             self._cleanup()
+
+
+BaseGraphDataset = GraphDataset

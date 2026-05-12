@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """
 electronic circuits dataset loader
 ----------------------------------
@@ -20,7 +22,7 @@ from tqdm import tqdm
 from torch_geometric.data import Data
 
 from graphbench._helpers import download_and_unpack, SourceSpec, get_logger
-from ._base import BaseGraphDataset
+from ._base import GraphDataset
 
 
 # (i) helper functions
@@ -32,7 +34,7 @@ from ._base import BaseGraphDataset
 _logger = get_logger(__name__)
 
 
-class ECDataset(BaseGraphDataset):
+class ECDataset(GraphDataset):
     def __init__(
         self,
         name: str,
@@ -100,14 +102,14 @@ class ECDataset(BaseGraphDataset):
         self.generate = generate
         self.split = split
         self.source = self.SOURCES[self.dataset_name]
+        self._logger = _logger
         self.cleanup_raw = cleanup_raw
         self.load_preprocessed = load_preprocessed
 
         # paths
         self.ec_dir = Path(root) / "electroniccircuits"
-        
-        
         self._raw_dir = (self.ec_dir / self.SOURCES[self.dataset_name].raw_folder / "raw")
+        
         # Include time window & task in the processed filename to avoid collisions
         self.processed_path = (self.ec_dir /self.SOURCES[self.dataset_name].raw_folder / "processed" / f"{self.dataset_name}_{self.split}.pt")
         super().__init__(str(self.ec_dir), transform, pre_transform, pre_filter)
@@ -169,11 +171,6 @@ class ECDataset(BaseGraphDataset):
             target_vout=self._target_vout,
         )
         return data_list
-
-
-    def _cleanup(self) -> None:
-        self._cleanup_path(self._raw_dir, logger=_logger)
-    
     def _make_datalist_from_json(self,
         data: List[Dict[str, Any]],
         target: str,

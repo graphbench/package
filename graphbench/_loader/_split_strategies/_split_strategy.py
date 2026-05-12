@@ -5,7 +5,7 @@ from torch_geometric.data import InMemoryDataset
 
 
 DatasetFactory: TypeAlias = Callable[[str, str, Optional[str]], InMemoryDataset]
-TrainValTestSet: TypeAlias = Dict[Literal["train", "valid", "test"], InMemoryDataset]
+TrainValTestSet: TypeAlias = Dict[Literal["train", "val", "test"], InMemoryDataset]
 
 
 class SplitStrategy(ABC):

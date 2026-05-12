@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 from pathlib import Path
 from typing import Callable, Dict, List, Optional, Union
@@ -6,7 +8,7 @@ from torch_geometric.data import Data
 
 from graphbench._algoreas_helpers import generate_algoreas_data
 from graphbench._helpers import download_and_unpack, SourceSpec, get_logger
-from ._base import BaseGraphDataset
+from ._base import GraphDataset
 
 
 # (i) helper functions
@@ -18,7 +20,7 @@ from ._base import BaseGraphDataset
 _logger = get_logger(__name__)
 
 
-class AlgoReasDataset(BaseGraphDataset):
+class AlgoReasDataset(GraphDataset):
     """
     Algorithmic reasoning (AlgoReas) datasets.
 
@@ -167,7 +169,7 @@ class AlgoReasDataset(BaseGraphDataset):
     def __init__(
         self,
         name: str,
-        split: str,
+        split: Literal["train", "val", "test"],
         root: Union[str, Path],
         transform: Optional[Callable[[Data], Data]] = None,
         pre_transform: Optional[Callable[[Data], Data]] = None,
@@ -244,6 +246,7 @@ class AlgoReasDataset(BaseGraphDataset):
         self.generate = generate
         self.split = split
         self.source = self.SOURCES[self.dataset_name]
+        self._logger = _logger
         self.cleanup_raw = cleanup_raw
         self.load_preprocessed = load_preprocessed
 
@@ -297,17 +300,6 @@ class AlgoReasDataset(BaseGraphDataset):
         # After loading into `self`, expose all elements as a list
         return [self.get(i) for i in range(len(self))]
 
-
-    def _cleanup(self) -> None:
-        """
-        Remove the dataset-specific raw folder contents. Only removes files
-        under `self._raw_dir` and attempts to remove the directory if empty.
-        If other processes share files under the same folder the directory may
-        remain and this method will silently continue.
-        """
-        # remove only the dataset-specific temp folder
-        self._cleanup_path(self._raw_dir, logger=_logger)
-
     def _load_algoreas_graphs(self) -> List[Data]:
         """
         Find the matching processed `.pt` file in `self._raw_dir` and load it
@@ -342,11 +334,9 @@ class AlgoReasDataset(BaseGraphDataset):
 
     @property
     def processed_file_names(self) -> list[str]:
-        """
-        Provide the expected processed filename for PyG compatibility. This
-        is primarily for API compatibility; loading/saving is handled by the
-        class via `self.processed_path`.
-        """
+        # Provide the expected processed filename for PyG compatibility. This
+        # is primarily for API compatibility; loading/saving is handled by the
+        # class via `self.processed_path`.
         return [f"{self.dataset_name}_{self.difficulty}_{self.num_nodes}_{self.split}.pt"]
     
 

@@ -15,13 +15,15 @@ The `name` argument selects among supported dataset variants (e.g. 'ba_small',
 'er_large'), and `split` must be one of 'train', 'val', or 'test'.
 """
 
+from __future__ import annotations
+
 import os
 from pathlib import Path
 from typing import Callable, Dict, Optional, Union
 
 from graphbench._co_helpers import BADataset, ERDataset, RBDataset
 from graphbench._helpers import download_and_unpack, split_dataset, SourceSpec, get_logger
-from ._base import BaseGraphDataset
+from ._base import GraphDataset
 
 
 # (i) helper functions
@@ -33,7 +35,7 @@ from ._base import BaseGraphDataset
 _logger = get_logger(__name__)
 
 
-class CODataset(BaseGraphDataset):
+class CODataset(GraphDataset):
     def __init__(
         self,
         name: str,
@@ -113,15 +115,15 @@ class CODataset(BaseGraphDataset):
         self.generate = generate
         self.split = split
         self.source = self.SOURCES[self.dataset_name]
+        self._logger = _logger
         self.cleanup_raw = cleanup_raw
         self.load_preprocessed = load_preprocessed
 
         # paths
-        self.root = Path(root) / "co" / self.SOURCES[self.dataset_name].raw_folder
-
-        # Include time window & task in the processed filename to avoid collisions
-        self.processed_path = Path(self.processed_dir) / "data.pt"
-        super().__init__(self.root, transform, pre_transform, pre_filter)
+        self.co_dir = Path(root) / "co"
+        self._raw_dir = self.co_dir / self.SOURCES[self.dataset_name].raw_folder / "raw"
+        self.processed_path = self.co_dir / self.SOURCES[self.dataset_name].raw_folder / "processed" / "data.pt"
+        super().__init__(str(self.co_dir), transform, pre_transform, pre_filter)
 
         self._load_cached_or_prepare(
             processed_path=self.processed_path,
@@ -135,14 +137,15 @@ class CODataset(BaseGraphDataset):
         # TODO RBDataset etc. may be using processed_dir where they should be using raw_dir. Refactor and get rid of SyntheticDataset.
         if self.num_samples is None:
             raise ValueError("num_samples cannot be None when generating a new dataset")
+        dataset_folder = self.co_dir / self.SOURCES[self.dataset_name].raw_folder
         if "rb" in self.dataset_name:
-            data = RBDataset(root=self.root, num_samples=self.num_samples)
+            data = RBDataset(root=dataset_folder, num_samples=self.num_samples)
 
         elif "er" in self.dataset_name:
-            data = ERDataset(root=self.root, num_samples=self.num_samples)
+            data = ERDataset(root=dataset_folder, num_samples=self.num_samples)
 
         elif "ba" in self.dataset_name:
-            data = BADataset(root=self.root, num_samples=self.num_samples)
+            data = BADataset(root=dataset_folder, num_samples=self.num_samples)
         else:
             raise ValueError(f"Dataset generation not supported for {self.dataset_name}")
 
@@ -163,7 +166,7 @@ class CODataset(BaseGraphDataset):
 
         download_and_unpack(
             source=self.source,
-            raw_dir=self.raw_dir,
+            raw_dir=self._raw_dir,
             processed_dir=self.processed_path,
             logger=_logger,
         )
@@ -172,35 +175,16 @@ class CODataset(BaseGraphDataset):
         if self.generate:
             return self._generate()
 
-        filepaths = self._find_matching_files(task=self.dataset_name, directory=self.raw_dir)
+        filepaths = self._find_matching_files(task=self.dataset_name, directory=self._raw_dir)
         self.load(filepaths[0])
 
         return [self.get(i) for i in range(len(self))]
 
-    def _cleanup(self) -> None:
-        raw_dir = Path(self.raw_dir)
-        if raw_dir.exists():
-            _logger.info(f"Cleaning up: {raw_dir}")
-            # remove only the dataset-specific temp folder
-            for p in sorted(raw_dir.rglob("*"), reverse=True):
-                try:
-                    p.unlink()
-                except (IsADirectoryError, PermissionError):
-                    pass
-            try:
-                raw_dir.rmdir()
-            except OSError:
-                # not empty due to shared artifacts; leave it
-                pass
-
-    def _find_matching_files(self,directory, task, split: Optional[str] = None, size: Optional[str] = None, target: Optional[str] = None):
+    def _find_matching_files(self, directory, task, split: Optional[str] = None, size: Optional[str] = None, target: Optional[str] = None):
         """
         Returns a list of filenames matching the convention in the directory.
         """
-        pattern = "data.pt"
-        return [os.path.join(directory,"processed", fname)
-                for fname in os.listdir(os.path.join(directory, 'processed'))
-                if fname == pattern]
+        return [str(self.processed_path)]
     
     def process(self):
         self._prepare()

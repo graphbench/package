@@ -7,7 +7,7 @@ class AlgoReasSplitStrategy(SplitStrategy):
         if "sizegen" in dataset_name:
             return {
                 "train": None,
-                "valid": None,
+                "val": None,
                 "test": factory(dataset_name, "test", dataset_name),
             }
 
@@ -17,6 +17,6 @@ class AlgoReasSplitStrategy(SplitStrategy):
         test_dataset = factory(dataset_name, "test", f"{dataset_name}_{test_suffix}")
         return {
             "train": train_dataset,
-            "valid": valid_dataset,
+            "val": valid_dataset,
             "test": test_dataset,
         }

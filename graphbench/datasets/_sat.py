@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """
 sat dataset loader
 ------------------
@@ -26,7 +28,7 @@ from torch_geometric.io import fs
 from tqdm import tqdm
 
 from graphbench._helpers import download_and_unpack, SourceSpec, get_logger
-from ._base import BaseGraphDataset
+from ._base import GraphDataset
 
 
 # (0) Constants
@@ -51,7 +53,7 @@ _MEDIUM_N_CLAUSES = 90_000
 _logger = get_logger(__name__)
 
 
-class SATDataset(BaseGraphDataset):
+class SATDataset(GraphDataset):
     def __init__(
         self,
         name: str,
@@ -172,6 +174,7 @@ class SATDataset(BaseGraphDataset):
         self.generate = generate
         self.split = split
         self.source = self.SOURCES[self.name]
+        self._logger = _logger
         self.cleanup_raw = cleanup_raw
         self.load_preprocessed = load_preprocessed
 
@@ -566,10 +569,6 @@ class SATDataset(BaseGraphDataset):
         else:
             data_list = self._load_sat_graphs()
         return data_list
-
-
-    def _cleanup(self) -> None:
-        self._cleanup_path(self._raw_dir, logger=_logger)
 
     def _load_sat_graphs(self) -> List[Data]:
         filepaths = self._find_matching_files(directory=self._raw_dir, size=self.formula_sizes, graph_type=self.graph_type)
