@@ -161,9 +161,6 @@ class AlgoReasDataset(GraphDataset):
         1. Generate synthetic graphs using NetworkX random graph generators
         2. Download and load pre-generated graphs.
            We recommend against using this directly; use the interface provided by :class:`graphbench.Loader` instead
-
-        The class writes a processed file named ``{dataset_name}_{num_nodes}_{difficulty}_{split}.pt``
-        into the dataset folder under ``root/algoreas/<raw_folder>/processed/``.
     """
 
     def __init__(
@@ -189,7 +186,7 @@ class AlgoReasDataset(GraphDataset):
                   e.g. ``bipartitematching_easy_16``.
                   Note that this differs from the names provided to :class:`graphbench.Loader`.
             split: Whether to load the train, validation, or test split of the dataset.
-            root: Root directory where the ``algoreas`` dataset folder lives.
+            root: Root directory where the ``algoreas`` dataset folder is stored.
             transform: Optional PyG transform applied to data objects before every access.
             pre_transform: Optional PyG transform applied before saving data objects to disk.
             pre_filter: A function that indicates whether a data object should be included in the final dataset.
