@@ -4,8 +4,8 @@ from ._split_strategy import DatasetFactory, SplitStrategy, TrainValTestSet
 
 
 class FixedSplitStrategy(SplitStrategy):
-    def __init__(self, split_map: Optional[Dict[Literal["train", "valid", "test"], str]] = None) -> None:
-        self.split_map = split_map or {"train": "train", "valid": "val", "test": "test"}
+    def __init__(self, split_map: Optional[Dict[Literal["train", "val", "test"], str]] = None) -> None:
+        self.split_map = split_map or {"train": "train", "val": "val", "test": "test"}
 
     def build(self, factory: DatasetFactory, dataset_name: str) -> TrainValTestSet:
         return {

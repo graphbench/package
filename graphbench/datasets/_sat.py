@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """
 sat dataset loader
 ------------------
@@ -21,11 +23,12 @@ import pandas as pd
 import torch
 import torch_geometric.transforms as T
 from sklearn.decomposition import PCA
-from torch_geometric.data import Data, HeteroData, InMemoryDataset
+from torch_geometric.data import Data, HeteroData
 from torch_geometric.io import fs
 from tqdm import tqdm
 
 from graphbench._helpers import download_and_unpack, SourceSpec, get_logger
+from ._base import GraphDataset
 
 
 # (0) Constants
@@ -50,7 +53,7 @@ _MEDIUM_N_CLAUSES = 90_000
 _logger = get_logger(__name__)
 
 
-class SATDataset(InMemoryDataset):
+class SATDataset(GraphDataset):
     def __init__(
         self,
         name: str,
@@ -171,6 +174,7 @@ class SATDataset(InMemoryDataset):
         self.generate = generate
         self.split = split
         self.source = self.SOURCES[self.name]
+        self._logger = _logger
         self.cleanup_raw = cleanup_raw
         self.load_preprocessed = load_preprocessed
 
@@ -181,14 +185,11 @@ class SATDataset(InMemoryDataset):
         self.processed_path = self.sat_dir / self.SOURCES[self.name].raw_folder / "processed"
         super().__init__(str(self.sat_dir), transform, pre_transform, pre_filter)
 
-        # process data if needed
-        if self.processed_path.exists():
-            self.load(self.processed_paths[0])
-            return
-
-        self._prepare()  # (i) downloads, unpacks, load data + (ii) timestep handle + (e) subgraph + collate
-        if self.cleanup_raw:
-            self._cleanup()
+        self._load_cached_or_prepare(
+            processed_path=self.processed_paths[0],
+            cleanup_raw=self.cleanup_raw,
+            logger=_logger,
+        )
 
     def _create_variable_clause_graph(self,clauses, n_vars):
         data = HeteroData()
@@ -522,7 +523,7 @@ class SATDataset(InMemoryDataset):
         #generate the corresponding sat dataset
         with ProcessPoolExecutor(max_workers=64) as executor:       
             for _, instance in tqdm(self.instances_csv.iterrows()):
-                futures.append(executor.submit(self._process_file, instance.to_dict(), self.graph_type, self.pre_transform, True))
+                futures.append(executor.submit(self._process_file, instance.to_dict(), self.graph_type, None, True))
             # futures = [
             #     executor.submit(process_file, instance.to_dict(), self.graph_type)
             #     for _, instance in self.instances_csv.iterrows()
@@ -552,55 +553,27 @@ class SATDataset(InMemoryDataset):
         print("Processing...", flush=True)
 
         # (b) Download & unpack helpers
-
-        #not possible right now 
         if self.generate:
-            pass
-            #data_list = self._generate()
-            #if self.pre_transform is not None:
-            #    data_list = [self.pre_transform(d) for d in data_list]
-            #data, slices = self.collate(data_list)
-            #torch.save((data, slices), self.processed_path)
+            return
 
+        download_and_unpack(
+            source=self.source,
+            raw_dir=self._raw_dir,
+            processed_dir=self.processed_path,
+            logger=_logger,
+        )
+
+    def _load_graphs(self) -> List[Data]:
+        if self.generate:
+            data_list = self._generate()
         else:
-            download_and_unpack(
-                source=self.source,
-                raw_dir=self._raw_dir,
-                processed_dir=self.processed_path,
-                logger=_logger,
-            )
-
-            loader = self._load_sat_graphs
-            loader_kwargs = {}
-            loader(**loader_kwargs)
-            data_list = [self.get(i) for i in range(len(self))]
-            if self.pre_filter is not None:
-                data_list = [data for data in data_list if self.pre_filter(data)]
-            if self.pre_transform is not None:
-                data_list = [self.pre_transform(d) for d in data_list]
-        self.save(data_list, self.processed_paths[0])
-        _logger.info(f"Saved processed dataset -> {self.processed_path}")
-
-
-    def _cleanup(self) -> None:
-        if self._raw_dir.exists():
-            _logger.info(f"Cleaning up: {self._raw_dir}")
-            # remove only the dataset-specific temp folder
-            for p in sorted(self._raw_dir.rglob("*"), reverse=True):
-                try:
-                    p.unlink()
-                except IsADirectoryError:
-                    pass
-            try:
-                self._raw_dir.rmdir()
-            except OSError:
-                # not empty due to shared artifacts; leave it
-                pass
+            data_list = self._load_sat_graphs()
+        return data_list
 
     def _load_sat_graphs(self) -> List[Data]:
         filepaths = self._find_matching_files(directory=self._raw_dir, size=self.formula_sizes, graph_type=self.graph_type)
         self.load(filepaths[0])
-        return 
+        return [self.get(i) for i in range(len(self))]
 
     def _find_matching_files(self,directory, size, graph_type):
         """

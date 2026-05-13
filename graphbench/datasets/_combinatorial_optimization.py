@@ -15,14 +15,15 @@ The `name` argument selects among supported dataset variants (e.g. 'ba_small',
 'er_large'), and `split` must be one of 'train', 'val', or 'test'.
 """
 
+from __future__ import annotations
+
 import os
 from pathlib import Path
-from typing import Callable, Dict, Literal, Optional, Union
-
-from torch_geometric.data import Data, InMemoryDataset
+from typing import Callable, Dict, Optional, Union
 
 from graphbench._co_helpers import BADataset, ERDataset, RBDataset
 from graphbench._helpers import download_and_unpack, split_dataset, SourceSpec, get_logger
+from ._base import GraphDataset
 
 
 # (i) helper functions
@@ -34,7 +35,7 @@ from graphbench._helpers import download_and_unpack, split_dataset, SourceSpec, 
 _logger = get_logger(__name__)
 
 
-class CODataset(InMemoryDataset):
+class CODataset(GraphDataset):
     def __init__(
         self,
         name: str,
@@ -45,6 +46,7 @@ class CODataset(InMemoryDataset):
         pre_filter: Optional[Callable[[Data], bool]] = None,
         target: Optional[str] = None,
         generate: Optional[bool] = False,
+        num_samples: Optional[int] = None,
         cleanup_raw: bool = True,
         # TODO: This should be removed in the future -- the user will download these files
         load_preprocessed = False,
@@ -59,6 +61,7 @@ class CODataset(InMemoryDataset):
         - transform, pre_transform: Optional PyG transforms applied at load time.
         - target (str|None): Optional task variant (unused for unsupervised tasks).
         - generate (bool): If True, generate synthetic graphs instead of downloading.
+        - num_samples (int|None): Number of synthetic graphs to generate when generate=True.
         - cleanup_raw (bool): Whether to remove raw files after processing.
 
         """
@@ -103,6 +106,7 @@ class CODataset(InMemoryDataset):
         #self.target = self.name_temp.lower().split(" ")[2]
         #self.dataset_name = name.lower()
         self.target = target
+        self.num_samples = num_samples
         self.dataset_name = name.lower().split("_")[1] + "_" + name.lower().split("_")[2]
         if self.dataset_name not in self.SOURCES:
             raise ValueError(f"Unsupported dataset name: {self.dataset_name}")
@@ -111,52 +115,37 @@ class CODataset(InMemoryDataset):
         self.generate = generate
         self.split = split
         self.source = self.SOURCES[self.dataset_name]
+        self._logger = _logger
         self.cleanup_raw = cleanup_raw
         self.load_preprocessed = load_preprocessed
 
         # paths
-        self.root = Path(root) / "co" / self.SOURCES[self.dataset_name].raw_folder
+        self.co_dir = Path(root) / "co"
+        self._raw_dir = self.co_dir / self.SOURCES[self.dataset_name].raw_folder / "raw"
+        self.processed_path = self.co_dir / self.SOURCES[self.dataset_name].raw_folder / "processed" / "data.pt"
+        super().__init__(str(self.co_dir), transform, pre_transform, pre_filter)
 
-        # Include time window & task in the processed filename to avoid collisions
-        self.processed_path = Path(self.processed_dir) / "data.pt"
-        super().__init__(self.root, transform, pre_transform, pre_filter)
-
-        # process data if needed
-        if self.processed_path.exists():
-            self.load(self.processed_path)
-            #logger.info(f"Loading cached processed data: {self.processed_path}")
-            #if "rb" in self.dataset_name:
-            #    data = RBDataset(root=self.algoreas_dir / f"{self.dataset_name}")
-
-            #elif "er" in self.dataset_name:
-            #    data = ERDataset(root=self.algoreas_dir / f"{self.dataset_name}")
-            #    print(data)
-
-            #elif "ba" in self.dataset_name:
-            #    data = BADataset(root=self.algoreas_dir / f"{self.dataset_name}")
-            #else:
-            #    raise ValueError(f"Dataset generation not supported for {self.dataset_name}")
-            #self.data = data
-            #print(self.data)
-        
-        else:
-            self._prepare()  # (i) downloads, unpacks, load data + (ii) timestep handle + (e) subgraph + collate
-            self.load(self.processed_path)
-        if self.cleanup_raw:
-            self._cleanup()
+        self._load_cached_or_prepare(
+            processed_path=self.processed_path,
+            cleanup_raw=self.cleanup_raw,
+            logger=_logger,
+        )
         
 
-    def _generate(self, pre_transform, transform) -> None:
+    def _generate(self) -> None:
         #generate the corresponding algorithmic reasoning dataset
         # TODO RBDataset etc. may be using processed_dir where they should be using raw_dir. Refactor and get rid of SyntheticDataset.
+        if self.num_samples is None:
+            raise ValueError("num_samples cannot be None when generating a new dataset")
+        dataset_folder = self.co_dir / self.SOURCES[self.dataset_name].raw_folder
         if "rb" in self.dataset_name:
-            data = RBDataset(root=self.root, pre_transform=pre_transform, transform=transform)
+            data = RBDataset(root=dataset_folder, num_samples=self.num_samples)
 
         elif "er" in self.dataset_name:
-            data = ERDataset(root=self.root, pre_transform=pre_transform, transform=transform)
+            data = ERDataset(root=dataset_folder, num_samples=self.num_samples)
 
         elif "ba" in self.dataset_name:
-            data = BADataset(root=self.root, pre_transform=pre_transform, transform=transform)
+            data = BADataset(root=dataset_folder, num_samples=self.num_samples)
         else:
             raise ValueError(f"Dataset generation not supported for {self.dataset_name}")
 
@@ -173,69 +162,29 @@ class CODataset(InMemoryDataset):
     def _prepare(self) -> None:
         # (b) Download & unpack helpers
         if self.generate:
-            data = self._generate(self.pre_transform, self.transform)
-            self.save(data, self.processed_path)
-            _logger.info(f"Saved processed dataset -> {self.processed_path}")
-        else:
-            download_and_unpack(
-                source=self.source,
-                raw_dir=self.raw_dir,
-                processed_dir=self.processed_path,
-                logger=_logger,
-            )
+            return
 
-            filepaths = self._find_matching_files(task=self.dataset_name, directory=self.raw_dir)
-            self.load(filepaths[0])
+        download_and_unpack(
+            source=self.source,
+            raw_dir=self._raw_dir,
+            processed_dir=self.processed_path,
+            logger=_logger,
+        )
 
-            # collate & save
-            data_list = [self.get(i) for i in range(len(self))]
+    def _load_graphs(self):
+        if self.generate:
+            return self._generate()
 
-            if self.pre_filter is not None:
-                data_list = [d for d in data_list if self.pre_filter(d)]
+        filepaths = self._find_matching_files(task=self.dataset_name, directory=self._raw_dir)
+        self.load(filepaths[0])
 
-            if self.pre_transform is not None:
-                data_list = [self.pre_transform(d) for d in data_list]
+        return [self.get(i) for i in range(len(self))]
 
-            self.save(data_list, self.processed_path)
-
-            #idea: concat the labels to the data object here
-            #if "supervised" in self.target:
-                #_download_and_unpack(source=self.LABEL_SOURCES["labels"], raw_dir=self.LABEL_SOURCES["labels"].raw_folder, processed_dir=self.processed_path, logger=logger)
-                #labels_path = self.load_labels()
-                #labels = torch.load(labels_path[0], weights_only=False)
-                #for i, data in enumerate(data_list):
-                    #data.y = labels[i].y
-
-            #further download the data labels beforehand if needed
-
-            #data, slices = self.collate(data_list)
-            #torch.save((data, slices), self.processed_path)
-            _logger.info(f"Saved processed dataset -> {self.processed_path}")
-
-    def _cleanup(self) -> None:
-        raw_dir = Path(self.raw_dir)
-        if raw_dir.exists():
-            _logger.info(f"Cleaning up: {raw_dir}")
-            # remove only the dataset-specific temp folder
-            for p in sorted(raw_dir.rglob("*"), reverse=True):
-                try:
-                    p.unlink()
-                except (IsADirectoryError, PermissionError):
-                    pass
-            try:
-                raw_dir.rmdir()
-            except OSError:
-                # not empty due to shared artifacts; leave it
-                pass
-
-    def _find_matching_files(self,directory, task, split: Optional[str] = None, size: Optional[str] = None, target: Optional[str] = None):
+    def _find_matching_files(self, directory, task, split: Optional[str] = None, size: Optional[str] = None, target: Optional[str] = None):
         """
         Returns a list of filenames matching the convention in the directory.
         """
-        pattern = "data.pt"
-        return [os.path.join(directory,"processed", fname)
-                for fname in os.listdir(os.path.join(directory, 'processed'))
-                if fname == pattern]
+        return [str(self.processed_path)]
     
     def process(self):
         self._prepare()

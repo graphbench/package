@@ -1,3 +1,4 @@
+from ._base import GraphDataset
 from ._algoreas import AlgoReasDataset
 from ._bluesky import BlueSkyDataset
 from ._chipdesign import ChipDesignDataset
@@ -8,6 +9,7 @@ from ._weatherforecasting import WeatherforecastingDataset
 
 
 __all__ = [
+    "GraphDataset",
     "AlgoReasDataset",
     "BlueSkyDataset",
     "ChipDesignDataset",

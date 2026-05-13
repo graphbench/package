@@ -1,11 +1,14 @@
+from __future__ import annotations
+
 import os
 from pathlib import Path
-from typing import Callable, Dict, List, Literal, Optional, Union
+from typing import Callable, Dict, List, Optional, Union
 
-from torch_geometric.data import Data, InMemoryDataset
+from torch_geometric.data import Data
 
 from graphbench._algoreas_helpers import generate_algoreas_data
 from graphbench._helpers import download_and_unpack, SourceSpec, get_logger
+from ._base import GraphDataset
 
 
 # (i) helper functions
@@ -17,7 +20,7 @@ from graphbench._helpers import download_and_unpack, SourceSpec, get_logger
 _logger = get_logger(__name__)
 
 
-class AlgoReasDataset(InMemoryDataset):
+class AlgoReasDataset(GraphDataset):
     """
     Algorithmic reasoning (AlgoReas) datasets.
 
@@ -243,6 +246,7 @@ class AlgoReasDataset(InMemoryDataset):
         self.generate = generate
         self.split = split
         self.source = self.SOURCES[self.dataset_name]
+        self._logger = _logger
         self.cleanup_raw = cleanup_raw
         self.load_preprocessed = load_preprocessed
 
@@ -253,15 +257,11 @@ class AlgoReasDataset(InMemoryDataset):
         super().__init__(str(self.algoreas_dir), transform, pre_transform, pre_filter)
 
         # process data if needed
-        if self.processed_path.exists():
-            _logger.info(f"Loading cached processed data: {self.processed_path}")
-            self.load(self.processed_path)
-            return
-
-        self._prepare()  # (i) downloads, unpacks, load data + (ii) timestep handle + (e) subgraph + collate
-        self.load(self.processed_path)
-        if self.cleanup_raw:
-            self._cleanup()
+        self._load_cached_or_prepare(
+            processed_path=self.processed_path,
+            cleanup_raw=self.cleanup_raw,
+            logger=_logger,
+        )
 
 
     def _generate(self) -> None:
@@ -273,7 +273,7 @@ class AlgoReasDataset(InMemoryDataset):
         data_list = generate_algoreas_data(
             name=self.dataset_name,
             split=self.split,
-            num_nodes=self.num_nodes,
+            num_nodes=int(self.num_nodes),
             difficulty=self.difficulty,
         )
         return data_list
@@ -281,55 +281,24 @@ class AlgoReasDataset(InMemoryDataset):
     def _prepare(self) -> None:
         # (b) Download & unpack helpers
         if self.generate:
-            data_list = self._generate()
-        else:
-            # Download and unpack into the raw directory, and then load the
-            # first matching processed file using `_load_algoreas_graphs`.
-            download_and_unpack(
-                source=self.source,
-                raw_dir=self._raw_dir,
-                processed_dir=self.processed_path,
-                logger=_logger,
-            )
+            return
 
-            # The loader places the data into this InMemoryDataset instance
-            self._load_algoreas_graphs()
+        download_and_unpack(
+            source=self.source,
+            raw_dir=self._raw_dir,
+            processed_dir=self.processed_path,
+            logger=_logger,
+        )
 
-            # After loading into `self`, expose all elements as a list
-            data_list = [self.get(i) for i in range(len(self))]
+    def _load_graphs(self) -> List[Data]:
+        if self.generate:
+            return self._generate()
 
-        # Apply pre_filter if provided
-        if self.pre_filter is not None:
-            data_list = [data for data in data_list if self.pre_filter(data)]
+        self._load_algoreas_graphs()
 
-        # Apply pre_transform if provided and save the processed cache
-        if self.pre_transform is not None:
-            data_list = [self.pre_transform(d) for d in data_list]
-
-        self.save(data_list, self.processed_path)
-        _logger.info(f"Saved processed dataset -> {self.processed_path}")
-
-
-    def _cleanup(self) -> None:
-        """
-        Remove the dataset-specific raw folder contents. Only removes files
-        under `self._raw_dir` and attempts to remove the directory if empty.
-        If other processes share files under the same folder the directory may
-        remain and this method will silently continue.
-        """
-        if self._raw_dir.exists():
-            _logger.info(f"Cleaning up: {self._raw_dir}")
-            # remove only the dataset-specific temp folder
-            for p in sorted(self._raw_dir.rglob("*"), reverse=True):
-                try:
-                    p.unlink()
-                except IsADirectoryError:
-                    pass
-            try:
-                self._raw_dir.rmdir()
-            except OSError:
-                # not empty due to shared artifacts; leave it
-                pass
+        # The loader places the data into this InMemoryDataset instance
+        # After loading into `self`, expose all elements as a list
+        return [self.get(i) for i in range(len(self))]
 
     def _load_algoreas_graphs(self) -> List[Data]:
         """

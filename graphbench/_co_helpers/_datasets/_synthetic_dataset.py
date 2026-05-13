@@ -28,7 +28,7 @@ class SyntheticDataset(InMemoryDataset, ABC):
     def __init__(
         self,
         root: str,
-        num_samples: Optional[int] = None,
+        num_samples: int,
         pre_filter: Optional[Callable[[Data], bool]] = None,
         pre_transform: Optional[Callable[[Data], Data]] = None,
         multiprocessing: bool = False,
@@ -53,9 +53,6 @@ class SyntheticDataset(InMemoryDataset, ABC):
         return ['data.pt']
 
     def process(self):
-        if self.num_samples is None:
-            raise ValueError("num_samples cannot be None when generating a new dataset")
-
         print("Generating Graphs...")
         if self.multiprocessing:
             graphs = parallelize_with_progress_bar(self.create_graph, range(self.num_samples), self.num_workers)

@@ -354,7 +354,7 @@ _ALGORITHMS = {
 
 
 def generate_algoreas_data(name, num_nodes, difficulty, split):
-    
+    num_nodes = int(num_nodes)
     if split == "train":
         data_list = [
                 _ALGORITHMS[name](num_nodes, name, _SAMPLING_LIST_TRAIN[difficulty], True)

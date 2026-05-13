@@ -8,9 +8,10 @@ from typing import Callable, Dict, List, Literal, Mapping, Optional, Sequence, T
 import pandas as pd
 import torch
 from torch import Tensor
-from torch_geometric.data import Data, InMemoryDataset
+from torch_geometric.data import Data
 
 from graphbench._helpers import download_and_unpack, SourceSpec, get_logger
+from ._base import GraphDataset
 
 
 TimeStamp: TypeAlias = Union[int, str]
@@ -143,7 +144,7 @@ def _add_edge_time(df: pd.DataFrame, format='%Y%m%d%H%M', index=2) -> Tuple[Tens
 # (d) Dataset
 # -----------------------------------------------------------------------------#
 
-class BlueSkyDataset(InMemoryDataset):
+class BlueSkyDataset(GraphDataset):
     """
     A compact PyG InMemoryDataset for BlueSky graphs.
 
@@ -231,6 +232,7 @@ class BlueSkyDataset(InMemoryDataset):
         self.split = split
         self.source = self.SOURCES_RAW[self.name]
         self.source_features = self.SOURCES[self.name]
+        self._logger = _logger
         self.cleanup_raw = cleanup_raw
         self.load_preprocessed = load_preprocessed
         self.pre_transform = pre_transform
@@ -247,17 +249,12 @@ class BlueSkyDataset(InMemoryDataset):
         self.empty_file_name = Path(empty_emb_file_name)
         self.target_file_name = Path(target_file_name)
 
-
         # process data if needed
-        if self.processed_path.exists():
-            _logger.info(f"Loading cached processed data: {self.processed_path}")
-            self.load(self.processed_path)
-            return
-
-        self._prepare()  # (i) downloads, unpacks, load data + (ii) timestep handle + (e) subgraph + collate
-        self.load(self.processed_path)
-        if self.cleanup_raw:
-            self._cleanup()
+        self._load_cached_or_prepare(
+            processed_path=self.processed_path,
+            cleanup_raw=self.cleanup_raw,
+            logger=_logger,
+        )
 
     def _prepare(self) -> None:
         # (b) Download & unpack helpers
@@ -273,8 +270,9 @@ class BlueSkyDataset(InMemoryDataset):
             processed_dir=self.processed_path,
             logger=_logger,
         )
+
+    def _load_graphs(self) -> List[Data]:
         # Pick default ts_train_end and gap per dataset type
-       
         if self.name in {'bluesky_quotes', 'bluesky_replies', 'bluesky_reposts'}:
             loader = self._load_graphs_common
             loader_kwargs = dict(base_csv_name=f"{self.name.split('_')[-1]}.csv", ts_start=None)
@@ -305,15 +303,6 @@ class BlueSkyDataset(InMemoryDataset):
                 data.y = y
                 data.edge_index = edge_index
 
-            # (e) optional followers subgraph
-            
-            # Apply pre_filter if provided
-            if self.pre_filter is not None:
-                data_list = [data for data in data_list if self.pre_filter(data)]
-            # collate & save
-            if self.pre_transform:
-                data_list = [self.pre_transform(d) for d in data_list]
-
         if self.split == 'all_targets':
             _logger.info('Loading target dictionary...')
             target_dict = torch.load(self.target_file_name, weights_only=False)
@@ -324,10 +313,7 @@ class BlueSkyDataset(InMemoryDataset):
             for data in data_list:
                 data.y = torch.tensor(ys)
 
-        #data, slices = self.collate(data_list)
-        #torch.save((data, slices), self.processed_path)
-        self.save(data_list, self.processed_path)
-        _logger.info(f"Saved processed dataset -> {self.processed_path}")
+        return data_list
 
 
     def _get_time_windows(self, ts_train_end, prediction_gaps) -> Optional[int]:
@@ -344,21 +330,6 @@ class BlueSkyDataset(InMemoryDataset):
             return (t0, t1)
         else:
             raise ValueError(f"Unsupported split: {self.split}")
-
-    def _cleanup(self) -> None:
-        if self._raw_dir.exists():
-            _logger.info(f"Cleaning up: {self._raw_dir}")
-            # remove only the dataset-specific temp folder
-            for p in sorted(self._raw_dir.rglob("*"), reverse=True):
-                try:
-                    p.unlink()
-                except IsADirectoryError:
-                    pass
-            try:
-                self._raw_dir.rmdir()
-            except OSError:
-                # not empty due to shared artifacts; leave it
-                pass
 
     # -------------------------------------------------------------------------#
     # (i) Graph Processing

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """
 electronic circuits dataset loader
 ----------------------------------
@@ -17,9 +19,10 @@ from typing import Any, Callable, Dict, List, Literal, Optional, Union
 import numpy as np
 import torch
 from tqdm import tqdm
-from torch_geometric.data import Data, InMemoryDataset
+from torch_geometric.data import Data
 
 from graphbench._helpers import download_and_unpack, SourceSpec, get_logger
+from ._base import GraphDataset
 
 
 # (i) helper functions
@@ -31,7 +34,7 @@ from graphbench._helpers import download_and_unpack, SourceSpec, get_logger
 _logger = get_logger(__name__)
 
 
-class ECDataset(InMemoryDataset):
+class ECDataset(GraphDataset):
     def __init__(
         self,
         name: str,
@@ -99,27 +102,23 @@ class ECDataset(InMemoryDataset):
         self.generate = generate
         self.split = split
         self.source = self.SOURCES[self.dataset_name]
+        self._logger = _logger
         self.cleanup_raw = cleanup_raw
         self.load_preprocessed = load_preprocessed
 
         # paths
         self.ec_dir = Path(root) / "electroniccircuits"
-        
-        
         self._raw_dir = (self.ec_dir / self.SOURCES[self.dataset_name].raw_folder / "raw")
+        
         # Include time window & task in the processed filename to avoid collisions
         self.processed_path = (self.ec_dir /self.SOURCES[self.dataset_name].raw_folder / "processed" / f"{self.dataset_name}_{self.split}.pt")
         super().__init__(str(self.ec_dir), transform, pre_transform, pre_filter)
 
-        # process data if needed
-        if self.processed_path.exists():
-            self.load(self.processed_path)
-            
-        else:
-            self._prepare()  # (i) downloads, unpacks, load data + (ii) timestep handle + (e) subgraph + collate
-            self.load(self.processed_path)
-        if self.cleanup_raw:
-            self._cleanup()
+        self._load_cached_or_prepare(
+            processed_path=self.processed_path,
+            cleanup_raw=self.cleanup_raw,
+            logger=_logger,
+        )
         
 
     def _generate(self, pre_transform, transform) -> None:
@@ -128,70 +127,50 @@ class ECDataset(InMemoryDataset):
     def _prepare(self) -> None:
         # (b) Download & unpack helpers
         if self.generate:
-            self._generate(None, None)
-        else:
-            download_and_unpack(
-                source=self.source,
-                raw_dir=self._raw_dir,
-                processed_dir=self.processed_path,
-                logger=_logger,
-            )
+            return
 
-            train_json = self.load_json(os.path.join(self._raw_dir, f"dataset_{self.component_size}_train.json"))
-            valid_json = self.load_json(os.path.join(self._raw_dir, f"dataset_{self.component_size}_valid.json"))
-            test_json = self.load_json(os.path.join(self._raw_dir, f"dataset_{self.component_size}_test.json"))
+        download_and_unpack(
+            source=self.source,
+            raw_dir=self._raw_dir,
+            processed_dir=self.processed_path,
+            logger=_logger,
+        )
 
-            data_all = train_json + valid_json + test_json
+    def _load_graphs(self) -> List[Data]:
+        if self.generate:
+            return self._generate(None, None)
 
+        train_json = self.load_json(os.path.join(self._raw_dir, f"dataset_{self.component_size}_train.json"))
+        valid_json = self.load_json(os.path.join(self._raw_dir, f"dataset_{self.component_size}_valid.json"))
+        test_json = self.load_json(os.path.join(self._raw_dir, f"dataset_{self.component_size}_test.json"))
 
-            targets = [datum['eff'] if self._target == 'eff' else datum['vout'] for datum in data_all]
-            statistics = self.get_statistics(targets)
-            y_range = self.get_y_range(
-                target=self._target,
-                statistics=statistics,
-                method=self._vout_norm_method,
-                target_min=-300,
-                target_max=300,
-            )
-
-            # Select which split to process
-            split_to_data = {"train": train_json, "val": valid_json, "test": test_json}
-            split_data = split_to_data[self.split]
-
-            # Build PyG Data objects
-            data_list = self._make_datalist_from_json(
-                data=split_data,
-                target=self._target,
-                vout_norm_method=self._vout_norm_method,
-                statistics=statistics,
-                y_range=y_range,
-                target_vout=self._target_vout,
-            )
-
-            if self.pre_filter is not None:
-                data_list = [d for d in data_list if self.pre_filter(d)]
-            if self.pre_transform is not None:
-                data_list = [self.pre_transform(d) for d in tqdm(data_list, desc="pre_transform")]
-
-            self.save(data_list, self.processed_path)
-            _logger.info(f"Saved processed dataset -> {self.processed_path}")
+        data_all = train_json + valid_json + test_json
 
 
-    def _cleanup(self) -> None:
-        if self._raw_dir.exists():
-            _logger.info(f"Cleaning up: {self._raw_dir}")
-            # remove only the dataset-specific temp folder
-            for p in sorted(self._raw_dir.rglob("*"), reverse=True):
-                try:
-                    p.unlink()
-                except IsADirectoryError:
-                    pass
-            try:
-                self._raw_dir.rmdir()
-            except OSError:
-                # not empty due to shared artifacts; leave it
-                pass
-    
+        targets = [datum['eff'] if self._target == 'eff' else datum['vout'] for datum in data_all]
+        statistics = self.get_statistics(targets)
+        y_range = self.get_y_range(
+            target=self._target,
+            statistics=statistics,
+            method=self._vout_norm_method,
+            target_min=-300,
+            target_max=300,
+        )
+
+        # Select which split to process
+        split_to_data = {"train": train_json, "val": valid_json, "test": test_json}
+        split_data = split_to_data[self.split]
+
+        # Build PyG Data objects
+        data_list = self._make_datalist_from_json(
+            data=split_data,
+            target=self._target,
+            vout_norm_method=self._vout_norm_method,
+            statistics=statistics,
+            y_range=y_range,
+            target_vout=self._target_vout,
+        )
+        return data_list
     def _make_datalist_from_json(self,
         data: List[Dict[str, Any]],
         target: str,

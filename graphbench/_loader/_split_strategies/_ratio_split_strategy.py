@@ -18,6 +18,6 @@ class RatioSplitStrategy(SplitStrategy):
         )
         return {
             "train": train_dataset,
-            "valid": valid_dataset,
+            "val": valid_dataset,
             "test": test_dataset,
         }
