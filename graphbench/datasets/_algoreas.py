@@ -78,6 +78,7 @@ class AlgoReasDataset(GraphDataset):
              - Erdős-Rényi
              - [All 6 generators]
 
+    Splits:
         Training and validation graphs contain 16 nodes each, while test graphs contain 128 nodes.
 
         We also provide additional size generalization datasets for each task, with 192, 256, 384, and 512 nodes each.
