@@ -241,6 +241,8 @@ class BlueSkyDataset(GraphDataset):
              - ...user *u* replied to a post by user *v*.
            * - ``bluesky_reposts``
              - ...user *u* reposted a post by user *v*.
+
+        In addition to this, we provide ``socialnetwork`` as a convenience identifier to load all of the above datasets.
     """
 
     _SOURCES_RAW: Dict[str, SourceSpec] = {
