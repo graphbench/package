@@ -178,7 +178,7 @@ class Loader():
             transform=self.transform,
             split=split,
             follower_subgraph=False,
-            cleanup_raw=True,
+            cleanup_raw=False,
             load_preprocessed=True,
         )
 

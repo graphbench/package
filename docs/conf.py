@@ -29,6 +29,7 @@ extensions = [
     "sphinx.ext.autodoc",      # Required to read Python docstrings and autogenerate .rst files
     "sphinx.ext.napoleon",     # Allows Sphinx to parse Google-style docstrings
     "sphinx.ext.viewcode",     # Adds links to the source code
+    "sphinx.ext.mathjax",      # Render LaTeX math
     "sphinx.ext.intersphinx",  # Allows linking to external documentation
 ]
 
@@ -83,6 +84,18 @@ napoleon_numpy_docstring = False
 # These names will also be recognized as section headers in Google-style docstrings,
 # in addition to the default ones like "Args", "Returns", etc.
 napoleon_custom_sections = ["Overview", "Graph Attributes", "List of Available Datasets", "Splits", "Usage Notes"]
+
+
+# -- MathJax configuration ---------------------------------------------------
+# Allow inline `$...$` TeX delimiters for math rendering in docstrings
+mathjax3_config = {
+    "tex": {
+        "inlineMath": [["$", "$"], ["\\(", "\\)"]],
+        "displayMath": [["$$", "$$"], ["\\[", "\\]"]],
+    }
+}
+# Explicit MathJax CDN path (MathJax v3) to guarantee the JS is injected
+mathjax_path = "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"
 
 
 

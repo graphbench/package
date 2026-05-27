@@ -43,7 +43,7 @@ class ECDataset(GraphDataset):
         pre_transform: Optional[Callable[[Data], Data]] = None,
         pre_filter: Optional[Callable[[Data], bool]] = None,
         generate: Optional[bool] = False,
-        cleanup_raw: bool = True,
+        cleanup_raw: bool = False,
         target_vout : Optional[float] = None,
         vout_norm_method : Optional[str] = 'min-max',
         # TODO: This should be removed in the future -- the user will download these files

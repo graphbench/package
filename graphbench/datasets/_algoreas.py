@@ -177,7 +177,7 @@ class AlgoReasDataset(GraphDataset):
         num_nodes: Optional[int] = 16,
         difficulty: Optional[str] = "easy",
         follower_subgraph: bool = False,
-        cleanup_raw: bool = True,
+        cleanup_raw: bool = False,
         # TODO: This should be removed in the future -- the user will download these files
         load_preprocessed=False,
     ):
