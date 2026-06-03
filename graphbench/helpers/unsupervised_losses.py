@@ -2,7 +2,7 @@
 
 import torch
 from torch import Tensor
-from torch_geometric.data import Batch, Data
+from torch_geometric.data import Batch
 from torch_geometric.utils import unbatch
 
 
