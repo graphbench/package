@@ -339,11 +339,8 @@ class ECDataset(GraphDataset):
                 y=y,
                 duty=duty,
                 device_ids=torch.tensor(datum['device_ids']),
-                device_ids_len=torch.tensor(datum['device_ids_len']),
                 port_ids=torch.tensor(datum['port_ids']),
-                port_ids_len=torch.tensor(datum['port_ids_len']),
                 terminal_ids=torch.tensor(datum['terminal_ids']),
-                terminal_ids_len=torch.tensor(datum['terminal_ids_len']),
             ))
         return data_list
     
