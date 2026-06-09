@@ -83,7 +83,7 @@ napoleon_numpy_docstring = False
 
 # These names will also be recognized as section headers in Google-style docstrings,
 # in addition to the default ones like "Args", "Returns", etc.
-napoleon_custom_sections = ["Overview", "Graph Attributes", "List of Available Datasets", "Splits", "Usage Notes"]
+napoleon_custom_sections = ["Overview", "Graph Attributes", "Targets", "List of Available Datasets", "Splits", "Usage Notes"]
 
 
 # -- MathJax configuration ---------------------------------------------------
