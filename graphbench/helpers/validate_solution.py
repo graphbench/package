@@ -1,0 +1,59 @@
+from torch import Tensor
+from torch_geometric.data import Data
+
+
+# TODO We provide this functionality for users of this benchmark, but it's currently very difficult to discover that
+#      this exists. Needs to be documented somewhere!
+
+
+def validate_mis_solution(graph: Data, solution: Tensor) -> bool:
+    """
+    Checks whether the given solution is a valid independent set for the provided graph.
+    That is, no two nodes in the set are adjacent to each other.
+
+    Parameters:
+    - `graph`: The problem graph
+    - `solution`: The independent set, as a binary vector where a 1 indicates that the node is in the set.
+                  Size `[graph.num_nodes]`
+    """
+    # check if solution is a binary vector of correct length
+    if solution.size() != (graph.num_nodes,) or not ((solution == 0) | (solution == 1)).all():
+        return False
+
+    # for each edge, see if both the source node and the destination node are in the set
+    src = graph.edge_index[0]
+    dst = graph.edge_index[1]
+    # this is non-zero if both nodes are in the set
+    both_in_set = solution[src] * solution[dst]
+
+    # if any edge connects two nodes in the set, it is not a valid independent set
+    return not both_in_set.any()
+
+
+def validate_max_cut_solution(graph: Data, solution: Tensor) -> bool:
+    """
+    Always returns `True`, since any node subset leads to a valid cut.
+    """
+    return True
+
+
+def validate_chrom_solution(graph: Data, solution: Tensor) -> bool:
+    """
+    Checks whether the given solution is a valid graph coloring for the provided graph.
+    That is, no two adjacent nodes are assigned the same color.
+
+    Parameters:
+    - `graph`: The problem graph
+    - `solution`: The graph coloring, as a vector where each entry indicates the color assigned to the corresponding
+                  node. Size `[graph.num_nodes]`
+    """
+    if solution.size() != (graph.num_nodes,):
+        return False
+
+    # for each edge, see if both nodes were assigned the same color
+    src = graph.edge_index[0]
+    dst = graph.edge_index[1]
+    same_color = solution[src] == solution[dst]
+
+    # if any edge connects two nodes with the same color, then this is not a valid graph coloring
+    return not same_color.any()
