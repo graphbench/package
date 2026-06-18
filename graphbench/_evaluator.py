@@ -1,10 +1,8 @@
 import numpy as np
 import torch
 import torchmetrics
-from torch import Tensor
-from torch_geometric.data import Batch
-from torch_geometric.utils import remove_self_loops, unbatch, unbatch_edge_index
 
+from graphbench.helpers.combinatorial_optimization import max_cut_size, mis_size, num_colors_used
 from graphbench._metadata import get_master_df
 from graphbench._helpers import VectorizedCircuitSimulator
 from graphbench._weatherforecasting_helpers import (
@@ -185,7 +183,7 @@ class Evaluator():
         Note: This callable expects `(x, batch)` rather than the standard
         `(y_pred, y_true)` signature.
         """
-        return lambda x, batch, dec_length=300, num_seeds=1: self._get_mis_size(x, batch, dec_length=dec_length, num_seeds=num_seeds)
+        return lambda x, batch, dec_length=300, num_seeds=1: mis_size(x, batch, dec_length=dec_length, num_seeds=num_seeds)
 
     def get_max_cut_size(self):
         """Return a callable computing MaxCutSize.
@@ -193,7 +191,7 @@ class Evaluator():
         Note: This callable expects `(x, batch)` rather than the standard
         `(y_pred, y_true)` signature.
         """
-        return lambda x, batch: self._get_max_cut_size(x, batch)
+        return lambda x, batch: max_cut_size(x, batch)
 
     def get_num_colors_used(self):
         """Return a callable computing NumColorsUsed.
@@ -201,7 +199,7 @@ class Evaluator():
         Note: This callable expects `(x, batch)` rather than the standard
         `(y_pred, y_true)` signature.
         """
-        return lambda x, batch, num_seeds=1: self._get_num_colors_used(x, batch, num_seeds=num_seeds)
+        return lambda x, batch, num_seeds=1: num_colors_used(x, batch, num_seeds=num_seeds)
     
     def _get_closed_gap(self,y_pred, y_true, inference_times=None):
 
@@ -357,90 +355,7 @@ class Evaluator():
         else:
             # No match
             return 0.0
-        
-    def _get_mis_size(self, x: Tensor, batch: Batch, dec_length: int = 300, num_seeds: int = 1) -> Tensor:
-        batch = self.mis_decoder(x, batch, dec_length, num_seeds)
 
-        data_list = batch.to_data_list()
-
-        size_list = [data.is_size for data in data_list]
-
-        return Tensor(size_list).mean()
-
-
-    def _mis_decoder(self, x: Tensor, batch: Batch, dec_length: int = 300, num_seeds: int = 1) -> Batch:
-        """Decode MIS scores from model outputs using greedy selection.
-
-        This helper applies a greedy construction over node score logits to
-        produce an approximate maximum independent set size for each
-        graph in the batch.
-        """
-        x = torch.sigmoid(x)
-        data_list = batch.to_data_list()
-        x_list = unbatch(x, batch.batch)
-
-        for data, x_data in zip(data_list, x_list):
-            is_size_list = []
-
-            for seed in range(num_seeds):
-
-                order = torch.argsort(x_data, dim=0, descending=True)
-                c = torch.zeros_like(x_data)
-
-                edge_index = remove_self_loops(data.edge_index)[0]
-                src, dst = edge_index[0], edge_index[1]
-
-                c[order[seed]] = 1
-                for idx in range(seed, min(dec_length, data.num_nodes)):
-                    c[order[idx]] = 1
-
-                    cTWc = torch.sum(c[src] * c[dst])
-                    if cTWc != 0:
-                        c[order[idx]] = 0
-
-                is_size_list.append(c.sum())
-
-            data.is_size = max(is_size_list)
-
-        return Batch.from_data_list(data_list)
-
-
-    def _get_max_cut_size(self, x: Tensor, data: Batch) -> Tensor:
-        """Compute average Max-Cut size from binary node assignments.
-
-        Expects `x` as a per-node real-valued tensor; values > 0 are
-        treated as one partition, <= 0 as the other.
-        """
-        x = (x > 0).float()
-        x = (x - 0.5) * 2
-
-        x_list = unbatch(x, data.batch)
-        edge_index_list = unbatch_edge_index(data.edge_index, data.batch)
-
-        cut_list = []
-        for x, edge_index in zip(x_list, edge_index_list):
-            cut_list.append(torch.sum(x[edge_index[0]] * x[edge_index[1]] == -1.0) / 2)
-
-        return Tensor(cut_list).mean()
-
-
-    # TODO: double-check implementation
-    def _get_num_colors_used(self, x: Tensor, batch: Batch, num_seeds: int = 1) -> Tensor:
-        """Estimate the number of colors used from decoded color labels.
-
-        This function expects a `graph_coloring_decoder` to populate
-        a `colors` attribute on each data object in the batch.
-        """
-        batch = self.graph_coloring_decoder(x, batch, num_seeds)
-
-        data_list = batch.to_data_list()
-
-        num_colors_used_list = []
-        for data in data_list:
-            num_colors_used = data.colors.unique().size(0)
-            num_colors_used_list.append(num_colors_used)
-
-        return torch.tensor(num_colors_used_list).mean(dtype=torch.float)
     
     def _get_weather_mse(self, y_pred, y_true):
         grid_variables = [
