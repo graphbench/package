@@ -61,7 +61,6 @@ def max_cut_size(x: Tensor, data: Batch) -> Tensor:
     return Tensor(cut_list).mean()
 
 
-# TODO: double-check implementation
 def num_colors_used(x: Tensor, batch: Batch, num_seeds: int = 1) -> Tensor:
     batch = graph_coloring_decoder(x, batch, num_seeds)
 
@@ -75,7 +74,6 @@ def num_colors_used(x: Tensor, batch: Batch, num_seeds: int = 1) -> Tensor:
     return torch.tensor(num_colors_used_list).mean(dtype=torch.float)
 
 
-# TODO: double-check implementation
 def graph_coloring_decoder(x: Tensor, batch: Batch, num_seeds: int = 1) -> Batch:
     max_num_colors = x.size(1)
     x = torch.sigmoid(x)
@@ -116,16 +114,3 @@ def graph_coloring_decoder(x: Tensor, batch: Batch, num_seeds: int = 1) -> Batch
         data.colors = best_colors
 
     return Batch.from_data_list(data_list)
-
-
-UNSUPERVISED_CO_METRICS = {
-    "mis_unsupervised": mis_size,
-    "cut_unsupervised": max_cut_size,
-    "chrom_unsupervised": num_colors_used,
-}
-
-UNSUPERVISED_CO_METRIC_NAMES = {
-    "mis_unsupervised": "mis_size",
-    "cut_unsupervised": "max_cut_size",
-    "chrom_unsupervised": "chromatic_number",
-}

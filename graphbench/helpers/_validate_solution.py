@@ -2,10 +2,6 @@ from torch import Tensor
 from torch_geometric.data import Data
 
 
-# TODO We provide this functionality for users of this benchmark, but it's currently very difficult to discover that
-#      this exists. Needs to be documented somewhere!
-
-
 def validate_mis_solution(graph: Data, solution: Tensor) -> bool:
     """
     Checks whether the given solution is a valid independent set for the provided graph.

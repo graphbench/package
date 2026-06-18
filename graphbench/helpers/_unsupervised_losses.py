@@ -32,7 +32,6 @@ def max_cut_loss(x: Tensor, batch: Batch) -> Tensor:
 # Adapted from GCON. GCON implements this for a node feature matrix X of size [num_nodes, num_colors] and an adjacency
 # matrix A of size [num_nodes, num_nodes]. It basically calculates sum(diag(X^T A X)) - 4 * sum(abs(X)).
 # The implementation here replaces the adjacency matrix with a pytorch geometric graph.
-# TODO double check implementation
 def graph_coloring_loss(x: Tensor, batch: Batch) -> Tensor:
     x = torch.sigmoid(x)
     x = (x - 0.5) * 2
@@ -40,10 +39,3 @@ def graph_coloring_loss(x: Tensor, batch: Batch) -> Tensor:
     edge_loss = torch.sum(x[src] * x[dst])
     node_loss = 4 * torch.abs(x).sum()
     return edge_loss - node_loss
-
-
-UNSUPERVISED_CO_LOSSES = {
-    "mis_unsupervised": mis_loss,
-    "cut_unsupervised": max_cut_loss,
-    "chrom_unsupervised": graph_coloring_loss,
-}
