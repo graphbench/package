@@ -161,7 +161,7 @@ class AlgoReasDataset(GraphDataset):
 
         1. Generate synthetic graphs using NetworkX random graph generators
         2. Download and load pre-generated graphs.
-           We recommend against using this directly; use the interface provided by :class:`graphbench.Loader` instead
+           We recommend using the interface provided by :class:`graphbench.Loader` instead of using this directly
     """
 
     def __init__(

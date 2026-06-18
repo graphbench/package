@@ -47,53 +47,45 @@ class CODataset(GraphDataset):
         To access provided datasets, please consider using :class:`graphbench.Loader`.
         The sections below give details on the data available through the :class:`graphbench.Loader` interface.
 
+
     Overview:
-        In the CO datasets, we consider 3 classic NP-hard graph problems: the maximum independent set (MIS), the max-cut, and the graph coloring problem. 
+        We consider 3 classic NP-hard graph CO problems: the maximum independent set (MIS), the max-cut, and the graph
+        coloring problem.
         We include tasks for both supervised and unsupervised learning settings:
 
-        - **Supervised setup**: Given a collection of CO
-          instances :math:`\mathcal{I}` and, for each instance
-          :math:`I \in \mathcal{I}`, an optimal solution
-          :math:`S^{*}_{I}` with objective value :math:`c(S^{*}_{I})` and a model :math:`m:\mathcal{I}\to\mathbb{R}`.
-          The learning task is to minimize the MAE between predicted and true optimal objectives:
+        - **Supervised**:
+          The task is to predict the objective value of the optimal solution on a given CO problem instance.
+          We currently only provide ground-truth solutions for MIS, generated using the heuristic solver
+          `KaMIS <https://github.com/KarlsruheMIS/KaMIS>`_ (Karlsruhe Maximum Independent Sets).
 
-          .. math::
-            
-              \frac{1}{|\mathcal{I}|} \sum_{I \in \mathcal{I}} \left| m(I) - c(S^{*}_{I}) \right|
+        - **Unsupervised**:
+          We provide unsupervised loss functions for each CO problem that act as differentiable surrogates for the
+          original CO objectives.
+          The model learns to predict approximate solutions in the form of node scores.
+          For evaluation, we provide problem-specific decoders that convert the predicted scores into a valid
+          solution, based on which the objective value can be computed using the provided metrics.
+          See the Helpers section below for details.
 
-          The supervised setup requires solver-generated
-          solutions and can be computationally expensive for large instances.
+        The `GraphBench paper <https://arxiv.org/abs/2512.04475>`_ describes both settings in more detail.
 
+        We synthetically generate problem instances across 3 well-established random graph families:
 
-        - **Unsupervised setup**: This setting is motivated when ground-truth
-          solutions are unavailable or expensive to obtain, and it directly
-          targets the CO problem. We provide a
-          differentiable surrogate loss :math:`\mathcal{L}:\mathbb{R}^{|\Omega(I)|}\to\mathbb{R}`
-          together with decoders :math:`d:\mathbb{R}^{|\Omega(I)|}\to F(I)`
-          for each CO problem. The learning task is to train the model :math:`m : I \to \mathbb{R}^{|\Omega(I)|}`
-          in an unsupervised fashion to predict a score for each
-          variable that indicates whether it belongs to the solution set,
-          minimizing
-
-          .. math::
-
-              \frac{1}{|\mathcal{I}|} \sum_{I \in \mathcal{I}} \mathcal{L}(m(I))
-
-        Currently, only MIS includes heuristic solutions generated with the
-        `KaMIS <https://github.com/KarlsruheMIS/KaMIS>`_ (Karlsruhe Maximum Independent Sets) solver.
-
-        We synthetically generate optimization problems across 3 well-established random graph families:
-
-        - Barabási-Albert (BA)
-        - Erdős-Rényi (ER)
         - RB
+        - Erdős-Rényi (ER)
+        - Barabási-Albert (BA)
 
         Each graph family is available in 2 configurations: small and large, totaling 6 distinct datasets.
-        There are 50,000 graphs in each dataset. The small graphs contain 200-300 nodes, while the large graphs contain 700-1200 nodes (700-800 for ER and BA, 800-1200 for RB).
-        Note that the BA graphs are considerably less dense than the ER and RB graphs.
+        There are 50,000 graphs in each dataset. The small graphs contain 200-300 nodes, while the large graphs contain
+        700-1200 nodes (700-800 for ER and BA, 800-1200 for RB).
+        Note that with the parameters we used, the BA graphs are considerably less dense than the ER and RB graphs.
+
+        Please refer to the `GraphBench paper <https://arxiv.org/abs/2512.04475>`_ for the exact parameters used for
+        graph generation.
+
 
         Please refer to the `GraphBench paper <https://arxiv.org/abs/2512.04475>`__ for the exact parameters used for graph generation.
-    
+
+
     Helpers:
         The following helper functions are available under ``graphbench.helpers``.
         They are optional but reduce boilerplate for unsupervised CO training and
@@ -210,14 +202,15 @@ class CODataset(GraphDataset):
               - ``graph`` (Data): The problem graph.
               - ``solution`` (Tensor): The graph coloring of shape ``[num_nodes]``, as a vector where each entry indicates the color assigned to the corresponding
                 node.
-        
+
 
     Splits:
-        All datasets use a 70% / 15% / 15% split for training, validation,
-        and testing.
+        All datasets use a 70% / 15% / 15% split for training, validation, and testing.
+
 
     Graph Attributes:
-        The generated graphs include no node or edge features, as the task focuses on combinatorial optimization based solely on graph structure.
+        The generated graphs include no node or edge features, as the task focuses on combinatorial optimization based
+        solely on graph structure.
 
         .. list-table::
            :header-rows: 1
@@ -227,10 +220,11 @@ class CODataset(GraphDataset):
              - Description
            * - ``num_mis``
              - ``[1]``
-             - Optimal objective value of the given CO instance
+             - Objective value of the optimal MIS solution (i.e. number of nodes in the maximum independent set)
            * - ``mis_solution``
              - ``[num_nodes]``
-             - Binary node indicators representing the optimal Maximum Independent Set solution
+             - Binary node indicators representing the optimal MIS solution
+
 
     List of Available Datasets:
         The available datasets are named using the pattern ``co_{generator}_{size}``,
@@ -254,12 +248,13 @@ class CODataset(GraphDataset):
 
         In addition to this, we provide ``co`` as a convenience identifier to load all of the above datasets.
 
+
     Usage Notes:
         The dataset class supports two modes:
 
-        1. Generate synthetic graphs using NetworkX random graph generators
+        1. Generate synthetic graphs
         2. Download and load pre-generated graphs.
-           We recommend against using this directly; use the interface provided by :class:`graphbench.Loader` instead
+           We recommend using the interface provided by :class:`graphbench.Loader` instead of using this directly
     """
     def __init__(
         self,
