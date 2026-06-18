@@ -93,34 +93,34 @@ class CODataset(GraphDataset):
 
         **Losses**
 
-        - :func:`graphbench.helpers.mis_loss` - Unsupervised loss function to
+        - :func:`graphbench.helpers.combinatorial_optimization.mis_loss` - Unsupervised loss function to
           train a model for MIS.
 
-          At test time, use :func:`graphbench.helpers.mis_decoder` to convert the
+          At test time, use :func:`graphbench.helpers.combinatorial_optimization.mis_decoder` to convert the
           model's soft output to a discrete solution, and
-          :func:`graphbench.helpers.mis_size` to evaluate the model's performance.
+          :func:`graphbench.helpers.combinatorial_optimization.mis_size` to evaluate the model's performance.
 
           Parameters:
               - ``x`` (Tensor): Soft model output of shape ``[num_nodes]``.
               - ``batch`` (Batch): PyG batch with the input graphs.
               - ``beta`` (float, optional): Edge penalty weight, default to 1.0.
 
-        - :func:`graphbench.helpers.max_cut_loss` - Unsupervised loss function to
+        - :func:`graphbench.helpers.combinatorial_optimization.max_cut_loss` - Unsupervised loss function to
           train a model for max-cut.
 
-          At test time, use :func:`graphbench.helpers.max_cut_size` to evaluate the
+          At test time, use :func:`graphbench.helpers.combinatorial_optimization.max_cut_size` to evaluate the
           model's performance.
 
           Parameters:
               - ``x`` (Tensor): Soft model output of shape ``[num_nodes]``.
               - ``batch`` (Batch): PyG batch with the input graphs.
 
-        - :func:`graphbench.helpers.graph_coloring_loss` - Unsupervised loss
+        - :func:`graphbench.helpers.combinatorial_optimization.graph_coloring_loss` - Unsupervised loss
           function to train a model for graph coloring.
 
-          At test time, use :func:`graphbench.helpers.graph_coloring_decoder` to
+          At test time, use :func:`graphbench.helpers.combinatorial_optimization.graph_coloring_decoder` to
           convert the model's soft output to a discrete solution, and
-          :func:`graphbench.helpers.num_colors_used` to evaluate the model's
+          :func:`graphbench.helpers.combinatorial_optimization.num_colors_used` to evaluate the model's
           performance.
 
           Parameters:
@@ -129,11 +129,11 @@ class CODataset(GraphDataset):
 
         **Decoders**
 
-        - :func:`graphbench.helpers.mis_decoder` - Converts the model's soft
+        - :func:`graphbench.helpers.combinatorial_optimization.mis_decoder` - Converts the model's soft
           prediction to a discrete solution to the MIS problem.
 
           This can be used at test time for models trained with
-          :func:`graphbench.helpers.mis_loss`.
+          :func:`graphbench.helpers.combinatorial_optimization.mis_loss`.
 
           Parameters:
               - ``x`` (Tensor): Soft model output of shape ``[num_nodes]``.
@@ -141,11 +141,11 @@ class CODataset(GraphDataset):
               - ``dec_length`` (int, optional): Number of decoding steps, default to 300.
               - ``num_seeds`` (int, optional): Number of decoding restarts, default to 1.
 
-        - :func:`graphbench.helpers.graph_coloring_decoder` - Converts the model's
+        - :func:`graphbench.helpers.combinatorial_optimization.graph_coloring_decoder` - Converts the model's
           soft prediction to a discrete solution to the graph coloring problem.
 
           This can be used at test time for models trained with
-          :func:`graphbench.helpers.graph_coloring_loss`.
+          :func:`graphbench.helpers.combinatorial_optimization.graph_coloring_loss`.
 
           Parameters:
               - ``x`` (Tensor): Soft model output of shape ``[num_nodes, num_colors]``.
@@ -154,7 +154,7 @@ class CODataset(GraphDataset):
 
         **Metrics**
 
-        - :func:`graphbench.helpers.mis_size` - Computes MIS size from a decoded
+        - :func:`graphbench.helpers.combinatorial_optimization.mis_size` - Computes MIS size from a decoded
           solution.
 
           Parameters:
@@ -163,16 +163,16 @@ class CODataset(GraphDataset):
               - ``dec_length`` (int, optional): Number of decoding steps, default to 300.
               - ``num_seeds`` (int, optional): Number of decoding restarts, default to 1.
 
-        - :func:`graphbench.helpers.max_cut_size` - Computes max-cut size from a
+        - :func:`graphbench.helpers.combinatorial_optimization.max_cut_size` - Computes max-cut size from a
           thresholded cut assignment.
 
           Parameters:
               - ``x`` (Tensor): Soft model output of shape ``[num_nodes]``.
               - ``batch`` (Batch): PyG batch with the input graphs.
 
-        - :func:`graphbench.helpers.num_colors_used` - Computes the number of
+        - :func:`graphbench.helpers.combinatorial_optimization.num_colors_used` - Computes the number of
           colors used by a decoded coloring. Uses
-          :func:`graphbench.helpers.graph_coloring_decoder` internally.
+          :func:`graphbench.helpers.combinatorial_optimization.graph_coloring_decoder` internally.
 
           Parameters:
               - ``x`` (Tensor): Soft model output of shape ``[num_nodes, num_colors]``.
@@ -181,21 +181,21 @@ class CODataset(GraphDataset):
 
         **Validators**
 
-        - :func:`graphbench.helpers.validate_mis_solution` - Checks whether a
+        - :func:`graphbench.helpers.combinatorial_optimization.validate_mis_solution` - Checks whether a
           the given solution is a valid independent set for the provided graph.
 
           Parameters:
               - ``graph`` (Data): The problem graph.
               - ``solution`` (Tensor): The independent set of shape ``[num_nodes]``, as a binary vector where a 1 indicates that the node is in the set.
 
-        - :func:`graphbench.helpers.validate_max_cut_solution` - Always returns
+        - :func:`graphbench.helpers.combinatorial_optimization.validate_max_cut_solution` - Always returns
           ``True`` because any partition defines a valid cut.
 
           Parameters:
               - ``graph`` (Data): The problem graph.
               - ``solution`` (Tensor): Binary node indicators.
 
-        - :func:`graphbench.helpers.validate_chrom_solution` - Checks whether the 
+        - :func:`graphbench.helpers.combinatorial_optimization.validate_chrom_solution` - Checks whether the
         given solution is a valid graph coloring for the provided graph.
 
           Parameters:
