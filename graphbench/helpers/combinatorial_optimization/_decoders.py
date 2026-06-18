@@ -1,17 +1,19 @@
 import torch
 from torch import Tensor
 from torch_geometric.data import Batch
-from torch_geometric.utils import unbatch, remove_self_loops
+from torch_geometric.utils import remove_self_loops, unbatch
 
 
 # Source: https://github.com/WenkelF/copt/blob/main/utils/metrics.py
-def mis_decoder(x: Tensor, batch: Batch, dec_length: int = 300, num_seeds: int = 1) -> Batch:
+def mis_decoder(x: Tensor, batch: Batch, dec_length: int = 300, num_seeds: int = 1) -> list[Tensor]:
     x = torch.sigmoid(x)
     data_list = batch.to_data_list()
     x_list = unbatch(x, batch.batch)
+    decoded_solutions: list[Tensor] = []
 
     for data, x_data in zip(data_list, x_list):
-        is_size_list = []
+        best_solution = None
+        best_size = None
 
         for seed in range(num_seeds):
 
@@ -29,18 +31,22 @@ def mis_decoder(x: Tensor, batch: Batch, dec_length: int = 300, num_seeds: int =
                 if cTWc != 0:
                     c[order[idx]] = 0
 
-            is_size_list.append(c.sum())
+            current_size = c.sum()
+            if best_size is None or current_size > best_size:
+                best_size = current_size
+                best_solution = c.clone()
 
-        data.is_size = max(is_size_list)
+        decoded_solutions.append(best_solution)
 
-    return Batch.from_data_list(data_list)
+    return decoded_solutions
 
 
-def graph_coloring_decoder(x: Tensor, batch: Batch, num_seeds: int = 1) -> Batch:
+def graph_coloring_decoder(x: Tensor, batch: Batch, num_seeds: int = 1) -> list[Tensor]:
     max_num_colors = x.size(1)
     x = torch.sigmoid(x)
     data_list = batch.to_data_list()
     x_list = unbatch(x, batch.batch)
+    decoded_colorings: list[Tensor] = []
 
     for data, x_data in zip(data_list, x_list):
         edge_index = remove_self_loops(data.edge_index)[0]
@@ -73,6 +79,6 @@ def graph_coloring_decoder(x: Tensor, batch: Batch, num_seeds: int = 1) -> Batch
                 min_colors_used = num_colors_used
                 best_colors = colors
 
-        data.colors = best_colors
+        decoded_colorings.append(best_colors)
 
-    return Batch.from_data_list(data_list)
+    return decoded_colorings

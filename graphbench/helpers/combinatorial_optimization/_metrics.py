@@ -8,13 +8,9 @@ from ._decoders import graph_coloring_decoder, mis_decoder
 
 # Source: https://github.com/WenkelF/copt/blob/main/utils/metrics.py
 def mis_size(x: Tensor, batch: Batch, dec_length: int = 300, num_seeds: int = 1) -> Tensor:
-    batch = mis_decoder(x, batch, dec_length, num_seeds)
-
-    data_list = batch.to_data_list()
-
-    size_list = [data.is_size for data in data_list]
-
-    return Tensor(size_list).mean()
+    decoded_solutions = mis_decoder(x, batch, dec_length, num_seeds)
+    size_list = [solution.sum() for solution in decoded_solutions]
+    return torch.stack(size_list).mean()
 
 
 # Source: https://github.com/WenkelF/copt/blob/main/utils/metrics.py
@@ -25,21 +21,14 @@ def max_cut_size(x: Tensor, data: Batch) -> Tensor:
     x_list = unbatch(x, data.batch)
     edge_index_list = unbatch_edge_index(data.edge_index, data.batch)
 
-    cut_list = []
+    cut_list: list[Tensor] = []
     for x, edge_index in zip(x_list, edge_index_list):
         cut_list.append(torch.sum(x[edge_index[0]] * x[edge_index[1]] == -1.0) / 2)
 
-    return Tensor(cut_list).mean()
+    return torch.stack(cut_list).mean()
 
 
 def num_colors_used(x: Tensor, batch: Batch, num_seeds: int = 1) -> Tensor:
-    batch = graph_coloring_decoder(x, batch, num_seeds)
-
-    data_list = batch.to_data_list()
-
-    num_colors_used_list = []
-    for data in data_list:
-        num_colors_used = data.colors.unique().size(0)
-        num_colors_used_list.append(num_colors_used)
-
+    decoded_colorings = graph_coloring_decoder(x, batch, num_seeds)
+    num_colors_used_list = [colors.unique().size(0) for colors in decoded_colorings]
     return torch.tensor(num_colors_used_list).mean(dtype=torch.float)
