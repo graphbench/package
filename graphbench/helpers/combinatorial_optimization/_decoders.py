@@ -41,6 +41,11 @@ def mis_decoder(x: Tensor, batch: Batch, dec_length: int = 300, num_seeds: int =
     return decoded_solutions
 
 
+def max_cut_decoder(x: Tensor, batch: Batch) -> list[Tensor]:
+    assignments = (x > 0).float()
+    return unbatch(assignments, batch.batch)
+
+
 def graph_coloring_decoder(x: Tensor, batch: Batch, num_seeds: int = 1) -> list[Tensor]:
     max_num_colors = x.size(1)
     x = torch.sigmoid(x)
