@@ -211,7 +211,7 @@ class TestGraphBenchEvaluatorFull(unittest.TestCase):
             return
         ev = self.get_evaluator("MisSize")
         # Patch the decoder used inside the helper metric implementation.
-        with patch("graphbench.helpers.combinatorial_optimization._metrics.mis_decoder") as mock_mis_decoder:
+        with patch("graphbench._evaluator.mis_decoder") as mock_mis_decoder:
             # Create dummy batch
             x = torch.randn(10, 1)
             batch = Batch.from_data_list([Data(x=torch.randn(5,1), edge_index=torch.zeros(2,0).long()) for _ in range(2)])

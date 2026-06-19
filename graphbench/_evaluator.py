@@ -2,7 +2,14 @@ import numpy as np
 import torch
 import torchmetrics
 
-from graphbench.helpers.combinatorial_optimization import max_cut_size, mis_size, num_colors_used
+from graphbench.helpers.combinatorial_optimization import (
+    graph_coloring_decoder,
+    max_cut_decoder,
+    max_cut_size,
+    mis_decoder,
+    mis_size,
+    num_colors_used,
+)
 from graphbench._metadata import get_master_df
 from graphbench._helpers import VectorizedCircuitSimulator
 from graphbench._weatherforecasting_helpers import (
@@ -183,7 +190,9 @@ class Evaluator():
         Note: This callable expects `(x, batch)` rather than the standard
         `(y_pred, y_true)` signature.
         """
-        return lambda x, batch, dec_length=300, num_seeds=1: mis_size(x, batch, dec_length=dec_length, num_seeds=num_seeds)
+        return lambda x, batch, dec_length=300, num_seeds=1: mis_size(
+            mis_decoder(x, batch, dec_length=dec_length, num_seeds=num_seeds)
+        )
 
     def get_max_cut_size(self):
         """Return a callable computing MaxCutSize.
@@ -191,7 +200,7 @@ class Evaluator():
         Note: This callable expects `(x, batch)` rather than the standard
         `(y_pred, y_true)` signature.
         """
-        return lambda x, batch: max_cut_size(x, batch)
+        return lambda x, batch: max_cut_size(max_cut_decoder(x, batch), batch)
 
     def get_num_colors_used(self):
         """Return a callable computing NumColorsUsed.
@@ -199,7 +208,7 @@ class Evaluator():
         Note: This callable expects `(x, batch)` rather than the standard
         `(y_pred, y_true)` signature.
         """
-        return lambda x, batch, num_seeds=1: num_colors_used(x, batch, num_seeds=num_seeds)
+        return lambda x, batch, num_seeds=1: num_colors_used(graph_coloring_decoder(x, batch, num_seeds=num_seeds))
     
     def _get_closed_gap(self,y_pred, y_true, inference_times=None):
 
