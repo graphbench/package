@@ -91,6 +91,31 @@ class CODataset(GraphDataset):
         They are optional but reduce boilerplate for unsupervised CO training and
         evaluation. Each loss refers to its matching decoder and metric.
 
+        .. list-table::
+           :header-rows: 1
+
+           * - Function
+             - MIS
+             - Max-Cut
+             - Graph Coloring
+           * - Loss
+             - :func:`~graphbench.helpers.combinatorial_optimization.mis_loss`
+             - :func:`~graphbench.helpers.combinatorial_optimization.max_cut_loss`
+             - :func:`~graphbench.helpers.combinatorial_optimization.graph_coloring_loss`
+           * - Decoder
+             - :func:`~graphbench.helpers.combinatorial_optimization.mis_decoder`
+             - :func:`~graphbench.helpers.combinatorial_optimization.max_cut_decoder`
+             - :func:`~graphbench.helpers.combinatorial_optimization.graph_coloring_decoder`
+           * - Metric
+             - :func:`~graphbench.helpers.combinatorial_optimization.mis_size`
+             - :func:`~graphbench.helpers.combinatorial_optimization.max_cut_size`
+             - :func:`~graphbench.helpers.combinatorial_optimization.num_colors_used`
+           * - Validator
+             - :func:`~graphbench.helpers.combinatorial_optimization.validate_mis_solution`
+             - :func:`~graphbench.helpers.combinatorial_optimization.validate_max_cut_solution`
+             - :func:`~graphbench.helpers.combinatorial_optimization.validate_chrom_solution`
+
+
         **Losses**
 
         - :func:`graphbench.helpers.combinatorial_optimization.mis_loss` - Unsupervised loss function to
