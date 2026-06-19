@@ -209,41 +209,100 @@ class TestGraphBenchEvaluatorFull(unittest.TestCase):
     def test_mis_size(self):
         if not HAS_PYG: 
             return
+        from graphbench.helpers.combinatorial_optimization import mis_decoder
+
         ev = self.get_evaluator("MisSize")
-        # Patch the decoder used inside the helper metric implementation.
-        with patch("graphbench._evaluator.mis_decoder") as mock_mis_decoder:
-            # Create dummy batch
-            x = torch.randn(10, 1)
-            batch = Batch.from_data_list([Data(x=torch.randn(5,1), edge_index=torch.zeros(2,0).long()) for _ in range(2)])
 
-            # Mock return of mis_decoder as decoded solutions.
-            mock_mis_decoder.return_value = [
-                torch.tensor([1.0, 1.0, 0.0]),
-                torch.tensor([1.0, 0.0, 1.0, 1.0]),
-            ]
+        # Graph 1: node 2 is adjacent to nodes 0 and 1, so greedy MIS rejects node 2.
+        edge_index_1 = torch.tensor([[2, 0, 2, 1], [0, 2, 1, 2]], dtype=torch.long)
+        # Graph 2: star centered at node 1, so nodes 0,2,3 can be selected together.
+        edge_index_2 = torch.tensor([[1, 0, 1, 2, 1, 3], [0, 1, 2, 1, 3, 1]], dtype=torch.long)
+        batch = Batch.from_data_list([
+            Data(x=torch.randn(3, 1), edge_index=edge_index_1),
+            Data(x=torch.randn(4, 1), edge_index=edge_index_2),
+        ])
 
-            # Call through evaluate(): for batch-metrics, evaluate() returns a float
-            score = ev.evaluate(x, batch=batch)
-            self.assertIsInstance(score, float)
-            self.assertEqual(score, 2.5)
+        # Logits chosen to produce deterministic greedy order per graph.
+        x = torch.tensor([
+            200., 100., -100.,  # graph 1
+            300., -100., 200., 100.  # graph 2
+        ])
+
+        decoded = mis_decoder(x, batch)
+        expected_decoded = [
+            torch.tensor([1.0, 1.0, 0.0]),
+            torch.tensor([1.0, 0.0, 1.0, 1.0]),
+        ]
+        self.assertTrue(torch.equal(decoded[0], expected_decoded[0]))
+        self.assertTrue(torch.equal(decoded[1], expected_decoded[1]))
+
+        # Call through evaluate(): for batch-metrics, evaluate() returns a float
+        score = ev.evaluate(x, batch=batch)
+        self.assertIsInstance(score, float)
+        self.assertEqual(score, 2.5)
 
     def test_max_cut_size(self):
         if not HAS_PYG: 
             return
+        from graphbench.helpers.combinatorial_optimization import max_cut_decoder
+
         ev = self.get_evaluator("MaxCutSize")
         # Create a simple graph: 0-1. 
         edge_index = torch.tensor([[0, 1], [1, 0]], dtype=torch.long)
         data = Batch.from_data_list([Data(num_nodes=2, edge_index=edge_index)])
         
         # Case 1: Different partitions (Cut)
-        x = torch.tensor([[1.0], [-1.0]]) 
+        x = torch.tensor([1.0, -1.0])
+        decoded = max_cut_decoder(x, data)
+        self.assertTrue(torch.equal(decoded[0], torch.tensor([1.0, 0.0])))
         score = ev.evaluate(x, batch=data)
         self.assertEqual(score, 1.0)
         
         # Case 2: Same partition (No cut)
-        x = torch.tensor([[1.0], [1.0]])
+        x = torch.tensor([1.0, 1.0])
+        decoded = max_cut_decoder(x, data)
+        self.assertTrue(torch.equal(decoded[0], torch.tensor([1.0, 1.0])))
         score = ev.evaluate(x, batch=data)
         self.assertEqual(score, 0.0)
+
+    def test_num_colors_used(self):
+        if not HAS_PYG:
+            return
+        from graphbench.helpers.combinatorial_optimization import graph_coloring_decoder
+
+        ev = self.get_evaluator("NumColorsUsed")
+
+        batch = Batch.from_data_list([
+            Data(x=torch.randn(4, 3), edge_index=torch.zeros(2, 0).long()),
+            Data(x=torch.randn(5, 3), edge_index=torch.zeros(2, 0).long()),
+        ])
+
+        # No edges: decoder reduces to per-node argmax over color logits.
+        x = torch.tensor([
+            # graph 1: 2 colors used (0 and 1)
+            [5.0, 1.0, 0.0],
+            [1.0, 5.0, 0.0],
+            [6.0, 2.0, 0.0],
+            [2.0, 6.0, 0.0],
+            # graph 2: 3 colors used (0, 1, and 2)
+            [5.0, 1.0, 0.0],
+            [1.0, 5.0, 0.0],
+            [1.0, 0.0, 5.0],
+            [6.0, 1.0, 0.0],
+            [1.0, 0.0, 6.0],
+        ])
+
+        decoded = graph_coloring_decoder(x, batch)
+        expected_decoded = [
+            torch.tensor([0, 1, 0, 1]),
+            torch.tensor([0, 1, 2, 0, 2]),
+        ]
+        self.assertTrue(torch.equal(decoded[0], expected_decoded[0]))
+        self.assertTrue(torch.equal(decoded[1], expected_decoded[1]))
+
+        score = ev.evaluate(x, batch=batch)
+        self.assertIsInstance(score, float)
+        self.assertEqual(score, 2.5)
 
     def test_closed_gap(self):
         ev = self.get_evaluator("ClosedGap")
