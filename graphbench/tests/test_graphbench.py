@@ -210,22 +210,22 @@ class TestGraphBenchEvaluatorFull(unittest.TestCase):
         if not HAS_PYG: 
             return
         ev = self.get_evaluator("MisSize")
-        # Patch mis_decoder on the instance because the class might have a bug (calls self.mis_decoder but defined as _mis_decoder)
-        ev.mis_decoder = MagicMock()
-        
-        # Create dummy batch
-        x = torch.randn(10, 1)
-        batch = Batch.from_data_list([Data(x=torch.randn(5,1), edge_index=torch.zeros(2,0).long()) for _ in range(2)])
-        
-        # Mock return of mis_decoder
-        mock_batch_out = MagicMock()
-        mock_batch_out.to_data_list.return_value = [MagicMock(is_size=3.0), MagicMock(is_size=4.0)]
-        ev.mis_decoder.return_value = mock_batch_out
-        
-        # Call through evaluate(): for batch-metrics, evaluate() returns a float
-        score = ev.evaluate(x, batch=batch)
-        self.assertIsInstance(score, float)
-        self.assertEqual(score, 3.5)
+        # Patch the decoder used inside the helper metric implementation.
+        with patch("graphbench.helpers.combinatorial_optimization._metrics.mis_decoder") as mock_mis_decoder:
+            # Create dummy batch
+            x = torch.randn(10, 1)
+            batch = Batch.from_data_list([Data(x=torch.randn(5,1), edge_index=torch.zeros(2,0).long()) for _ in range(2)])
+
+            # Mock return of mis_decoder as decoded solutions.
+            mock_mis_decoder.return_value = [
+                torch.tensor([1.0, 1.0, 0.0]),
+                torch.tensor([1.0, 0.0, 1.0, 1.0]),
+            ]
+
+            # Call through evaluate(): for batch-metrics, evaluate() returns a float
+            score = ev.evaluate(x, batch=batch)
+            self.assertIsInstance(score, float)
+            self.assertEqual(score, 2.5)
 
     def test_max_cut_size(self):
         if not HAS_PYG: 
