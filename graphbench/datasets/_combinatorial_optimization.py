@@ -87,7 +87,7 @@ class CODataset(GraphDataset):
 
 
     Helpers:
-        The following helper functions are available under ``graphbench.helpers``.
+        The following helper functions are available under :mod:`graphbench.helpers.combinatorial_optimization`.
         They are optional but reduce boilerplate for unsupervised CO training and
         evaluation. Each loss refers to its matching decoder and metric.
 
@@ -203,30 +203,6 @@ class CODataset(GraphDataset):
               - ``x`` (Tensor): Soft model output of shape ``[num_nodes, num_colors]``.
               - ``batch`` (Batch): PyG batch with the input graphs.
               - ``num_seeds`` (int, optional): Number of decoding restarts, default to 1.
-
-        **Validators**
-
-        - :func:`graphbench.helpers.combinatorial_optimization.validate_mis_solution` - Checks whether a
-          the given solution is a valid independent set for the provided graph.
-
-          Parameters:
-              - ``graph`` (Data): The problem graph.
-              - ``solution`` (Tensor): The independent set of shape ``[num_nodes]``, as a binary vector where a 1 indicates that the node is in the set.
-
-        - :func:`graphbench.helpers.combinatorial_optimization.validate_max_cut_solution` - Always returns
-          ``True`` because any partition defines a valid cut.
-
-          Parameters:
-              - ``graph`` (Data): The problem graph.
-              - ``solution`` (Tensor): Binary node indicators.
-
-        - :func:`graphbench.helpers.combinatorial_optimization.validate_chrom_solution` - Checks whether the
-        given solution is a valid graph coloring for the provided graph.
-
-          Parameters:
-              - ``graph`` (Data): The problem graph.
-              - ``solution`` (Tensor): The graph coloring of shape ``[num_nodes]``, as a vector where each entry indicates the color assigned to the corresponding
-                node.
 
 
     Splits:
