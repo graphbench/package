@@ -116,42 +116,6 @@ class CODataset(GraphDataset):
              - :func:`~graphbench.helpers.combinatorial_optimization.validate_chrom_solution`
 
 
-        **Losses**
-
-        - :func:`graphbench.helpers.combinatorial_optimization.mis_loss` - Unsupervised loss function to
-          train a model for MIS.
-
-          At test time, use :func:`graphbench.helpers.combinatorial_optimization.mis_decoder` to convert the
-          model's soft output to a discrete solution, and
-          :func:`graphbench.helpers.combinatorial_optimization.mis_size` to evaluate the model's performance.
-
-          Parameters:
-              - ``x`` (Tensor): Soft model output of shape ``[num_nodes]``.
-              - ``batch`` (Batch): PyG batch with the input graphs.
-              - ``beta`` (float, optional): Edge penalty weight, default to 1.0.
-
-        - :func:`graphbench.helpers.combinatorial_optimization.max_cut_loss` - Unsupervised loss function to
-          train a model for max-cut.
-
-          At test time, use :func:`graphbench.helpers.combinatorial_optimization.max_cut_size` to evaluate the
-          model's performance.
-
-          Parameters:
-              - ``x`` (Tensor): Soft model output of shape ``[num_nodes]``.
-              - ``batch`` (Batch): PyG batch with the input graphs.
-
-        - :func:`graphbench.helpers.combinatorial_optimization.graph_coloring_loss` - Unsupervised loss
-          function to train a model for graph coloring.
-
-          At test time, use :func:`graphbench.helpers.combinatorial_optimization.graph_coloring_decoder` to
-          convert the model's soft output to a discrete solution, and
-          :func:`graphbench.helpers.combinatorial_optimization.num_colors_used` to evaluate the model's
-          performance.
-
-          Parameters:
-              - ``x`` (Tensor): Soft model output of shape ``[num_nodes, num_colors]``.
-              - ``batch`` (Batch): PyG batch with the input graphs.
-
         **Decoders**
 
         - :func:`graphbench.helpers.combinatorial_optimization.mis_decoder` - Converts the model's soft
