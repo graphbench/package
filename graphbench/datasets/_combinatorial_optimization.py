@@ -83,13 +83,21 @@ class CODataset(GraphDataset):
         graph generation.
 
 
-        Please refer to the `GraphBench paper <https://arxiv.org/abs/2512.04475>`__ for the exact parameters used for graph generation.
-
-
     Helpers:
-        The following helper functions are available under :mod:`graphbench.helpers.combinatorial_optimization`.
-        They are optional but reduce boilerplate for unsupervised CO training and
-        evaluation. Each loss refers to its matching decoder and metric.
+        We provide additional helper functions for the unsupervised setting under
+        :mod:`graphbench.helpers.combinatorial_optimization`.
+
+        For each CO problem, we provide:
+
+        - An unsupervised loss function that can be used to train a model without ground-truth solutions,
+        - A decoder that converts the model's soft output to a discrete solution for evaluation at test time,
+        - A metric that computes the objective value of given solutions, and
+        - A validator that checks whether a given solution meets the constraints of the CO problem.
+
+        In general, validating the output of a decoder is not necessary, since the decoders already guarantee valid
+        outputs.
+
+        Details on each respective helper function can be found here:
 
         .. list-table::
            :header-rows: 1
