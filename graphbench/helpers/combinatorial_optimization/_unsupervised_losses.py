@@ -15,7 +15,7 @@ def mis_loss(x: Tensor, batch: Batch, beta: float = 1.0) -> Tensor:
     that solution.
 
     Args:
-        x: Soft model output of shape ``[num_nodes]``.
+        x: Soft model output of size ``[batch_num_nodes]``.
         batch: Problem graphs.
         beta: Weight for the constraint violation penalty term (default 1.0).
 
@@ -46,7 +46,7 @@ def max_cut_loss(x: Tensor, batch: Batch) -> Tensor:
     that solution.
 
     Args:
-        x: Soft model output of shape ``[num_nodes]``.
+        x: Soft model output of size ``[batch_num_nodes]``.
         batch: Problem graphs.
 
     Returns:
@@ -70,7 +70,7 @@ def graph_coloring_loss(x: Tensor, batch: Batch) -> Tensor:
     :func:`~graphbench.helpers.combinatorial_optimization.num_colors_used` to evaluate that solution.
 
     Args:
-        x: Soft model output of shape ``[num_nodes, num_colors]``.
+        x: Soft model output of size ``[batch_num_nodes, num_colors]``.
         batch: Problem graphs.
 
     Returns:

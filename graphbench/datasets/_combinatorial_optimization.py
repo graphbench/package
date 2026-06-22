@@ -116,32 +116,6 @@ class CODataset(GraphDataset):
              - :func:`~graphbench.helpers.combinatorial_optimization.validate_chrom_solution`
 
 
-        **Decoders**
-
-        - :func:`graphbench.helpers.combinatorial_optimization.mis_decoder` - Converts the model's soft
-          prediction to a discrete solution to the MIS problem.
-
-          This can be used at test time for models trained with
-          :func:`graphbench.helpers.combinatorial_optimization.mis_loss`.
-
-          Parameters:
-              - ``x`` (Tensor): Soft model output of shape ``[num_nodes]``.
-              - ``batch`` (Batch): PyG batch with the input graphs.
-              - ``dec_length`` (int, optional): Number of decoding steps, default to 300.
-              - ``num_seeds`` (int, optional): Number of decoding restarts, default to 1.
-
-        - :func:`graphbench.helpers.combinatorial_optimization.graph_coloring_decoder` - Converts the model's
-          soft prediction to a discrete solution to the graph coloring problem.
-
-          This can be used at test time for models trained with
-          :func:`graphbench.helpers.combinatorial_optimization.graph_coloring_loss`.
-
-          Parameters:
-              - ``x`` (Tensor): Soft model output of shape ``[num_nodes, num_colors]``.
-              - ``batch`` (Batch): PyG batch with the input graphs.
-              - ``num_seeds`` (int, optional): Number of decoding restarts, default to 1.
-
-
     Splits:
         All datasets use a 70% / 15% / 15% split for training, validation, and testing.
 

@@ -6,6 +6,23 @@ from torch_geometric.utils import remove_self_loops, unbatch
 
 # Source: https://github.com/WenkelF/copt/blob/main/utils/metrics.py
 def mis_decoder(x: Tensor, batch: Batch, dec_length: int = 300, num_seeds: int = 1) -> list[Tensor]:
+    """
+    Converts the model's soft predictions to discrete solutions to the maximum independent set (MIS) problem, using a
+    simple greedy algorithm.
+
+    This can be used at test time for models trained with
+    :func:`~graphbench.helpers.combinatorial_optimization.mis_loss`.
+
+    Args:
+        x: Soft model output of size ``[batch_num_nodes]``.
+        batch: Problem graphs.
+        dec_length: Number of decoding steps (default 300).
+        num_seeds: Number of decoding restarts (default 1).
+
+    Returns:
+        For each problem graph, a binary vector of size ``[num_nodes]``, where a 1 indicates that the corresponding
+        node is in the independent set.
+    """
     x = torch.sigmoid(x)
     data_list = batch.to_data_list()
     x_list = unbatch(x, batch.batch)
@@ -42,11 +59,38 @@ def mis_decoder(x: Tensor, batch: Batch, dec_length: int = 300, num_seeds: int =
 
 
 def max_cut_decoder(x: Tensor, batch: Batch) -> list[Tensor]:
+    """
+    Converts the model's soft predictions to discrete solutions to the max-cut problem using simple thresholding.
+
+    Args:
+        x: Soft model output of size ``[batch_num_nodes]``.
+           Values > 0 are treated as one partition, values <= 0 as the other partition.
+        batch: Problem graphs.
+
+    Returns:
+        For each problem graph, a binary vector of size ``[num_nodes]``, where a 1 indicates that the corresponding
+        node is in one partition and a 0 indicates that it is in the other partition.
+    """
     assignments = (x > 0).float()
     return unbatch(assignments, batch.batch)
 
 
 def graph_coloring_decoder(x: Tensor, batch: Batch, num_seeds: int = 1) -> list[Tensor]:
+    """
+    Converts the model's soft predictions to discrete solutions to the graph coloring problem.
+
+    This can be used at test time for models trained with
+    :func:`~graphbench.helpers.combinatorial_optimization.graph_coloring_loss`.
+
+    Args:
+        x: Soft model output of size ``[batch_num_nodes, num_colors]``.
+        batch: Problem graphs.
+        num_seeds: Number of decoding restarts (default 1).
+
+    Returns:
+        For each problem graph, a vector of size ``[num_nodes]``, where each integer entry indicates the color assigned
+        to the corresponding node.
+    """
     max_num_colors = x.size(1)
     x = torch.sigmoid(x)
     data_list = batch.to_data_list()
