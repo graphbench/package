@@ -4,7 +4,7 @@ from torch import Tensor
 from torch_geometric.data import Data
 
 
-def validate_mis_solution(graph: Data, solution: Tensor) -> bool:
+def validate_mis_solution(solution: Tensor, graph: Data) -> bool:
     """
     Checks whether the given solution is a valid independent set for the provided graph.
     That is, no two nodes in the set are adjacent to each other.
@@ -13,9 +13,9 @@ def validate_mis_solution(graph: Data, solution: Tensor) -> bool:
     be valid, so validating them again isn't necessary.
 
     Args:
-        graph: The problem graph.
         solution: The independent set, as a binary vector where a 1 indicates that the node is in the set.
                   Size ``[graph.num_nodes]``.
+        graph: The problem graph.
     """
     # check if solution is a binary vector of correct length
     if solution.size() != (graph.num_nodes,) or not ((solution == 0) | (solution == 1)).all():
@@ -31,18 +31,18 @@ def validate_mis_solution(graph: Data, solution: Tensor) -> bool:
     return not both_in_set.any()
 
 
-def validate_max_cut_solution(graph: Optional[Data] = None, solution: Optional[Tensor] = None) -> bool:
+def validate_max_cut_solution(solution: Optional[Tensor] = None, graph: Optional[Data] = None) -> bool:
     """
     Always returns ``True``, since any node subset defines a valid cut.
 
     Args:
-        graph: Ignored, argument is present for consistency (default ``None``).
         solution: Ignored, argument is present for consistency (default ``None``).
+        graph: Ignored, argument is present for consistency (default ``None``).
     """
     return True
 
 
-def validate_chrom_solution(graph: Data, solution: Tensor) -> bool:
+def validate_chrom_solution(solution: Tensor, graph: Data) -> bool:
     """
     Checks whether the given solution is a valid graph coloring for the provided graph.
     That is, no two adjacent nodes are assigned the same color.
@@ -51,9 +51,9 @@ def validate_chrom_solution(graph: Data, solution: Tensor) -> bool:
     guaranteed to be valid, so validating them again isn't necessary.
 
     Args:
-        graph: The problem graph.
         solution: The graph coloring, as a vector where each entry indicates the color assigned to the corresponding
                   node. Size ``[graph.num_nodes]``.
+        graph: The problem graph.
     """
     if solution.size() != (graph.num_nodes,):
         return False
