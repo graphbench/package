@@ -17,7 +17,7 @@ def mis_loss(x: Tensor, batch: Batch, beta: float = 1.0) -> Tensor:
     Args:
         x: Soft model output of shape ``[num_nodes]``.
         batch: Problem graphs.
-        beta: Weight for the constraint violation penalty term, defaults to 1.0.
+        beta: Weight for the constraint violation penalty term (default 1.0).
     """
     x = torch.sigmoid(x)
     data_list = batch.to_data_list()

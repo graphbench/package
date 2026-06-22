@@ -36,8 +36,8 @@ def validate_max_cut_solution(graph: Optional[Data] = None, solution: Optional[T
     Always returns ``True``, since any node subset defines a valid cut.
 
     Args:
-        graph: Ignored, argument is present for consistency.
-        solution: Ignored, argument is present for consistency.
+        graph: Ignored, argument is present for consistency (default ``None``).
+        solution: Ignored, argument is present for consistency (default ``None``).
     """
     return True
 

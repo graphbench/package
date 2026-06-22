@@ -141,33 +141,6 @@ class CODataset(GraphDataset):
               - ``batch`` (Batch): PyG batch with the input graphs.
               - ``num_seeds`` (int, optional): Number of decoding restarts, default to 1.
 
-        **Metrics**
-
-        - :func:`graphbench.helpers.combinatorial_optimization.mis_size` - Computes MIS size from a decoded
-          solution.
-
-          Parameters:
-              - ``x`` (Tensor): Soft model output of shape ``[num_nodes]``.
-              - ``batch`` (Batch): PyG batch with the input graphs.
-              - ``dec_length`` (int, optional): Number of decoding steps, default to 300.
-              - ``num_seeds`` (int, optional): Number of decoding restarts, default to 1.
-
-        - :func:`graphbench.helpers.combinatorial_optimization.max_cut_size` - Computes max-cut size from a
-          thresholded cut assignment.
-
-          Parameters:
-              - ``x`` (Tensor): Soft model output of shape ``[num_nodes]``.
-              - ``batch`` (Batch): PyG batch with the input graphs.
-
-        - :func:`graphbench.helpers.combinatorial_optimization.num_colors_used` - Computes the number of
-          colors used by a decoded coloring. Uses
-          :func:`graphbench.helpers.combinatorial_optimization.graph_coloring_decoder` internally.
-
-          Parameters:
-              - ``x`` (Tensor): Soft model output of shape ``[num_nodes, num_colors]``.
-              - ``batch`` (Batch): PyG batch with the input graphs.
-              - ``num_seeds`` (int, optional): Number of decoding restarts, default to 1.
-
 
     Splits:
         All datasets use a 70% / 15% / 15% split for training, validation, and testing.
