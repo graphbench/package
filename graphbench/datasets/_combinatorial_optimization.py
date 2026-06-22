@@ -83,47 +83,6 @@ class CODataset(GraphDataset):
         graph generation.
 
 
-    Helpers:
-        We provide additional helper functions for the unsupervised setting under
-        :mod:`graphbench.helpers.combinatorial_optimization`.
-
-        For each CO problem, we provide:
-
-        - An unsupervised loss function that can be used to train a model without ground-truth solutions,
-        - A decoder that converts the model's soft output to a discrete solution for evaluation at test time,
-        - A metric that computes the objective value of given solutions, and
-        - A validator that checks whether a given solution meets the constraints of the CO problem.
-
-        In general, validating the output of a decoder is not necessary, since the decoders already guarantee valid
-        outputs.
-
-        Details on each respective helper function can be found here:
-
-        .. list-table::
-           :header-rows: 1
-
-           * - Function
-             - MIS
-             - Max-Cut
-             - Graph Coloring
-           * - Loss
-             - :func:`~graphbench.helpers.combinatorial_optimization.mis_loss`
-             - :func:`~graphbench.helpers.combinatorial_optimization.max_cut_loss`
-             - :func:`~graphbench.helpers.combinatorial_optimization.graph_coloring_loss`
-           * - Decoder
-             - :func:`~graphbench.helpers.combinatorial_optimization.mis_decoder`
-             - :func:`~graphbench.helpers.combinatorial_optimization.max_cut_decoder`
-             - :func:`~graphbench.helpers.combinatorial_optimization.graph_coloring_decoder`
-           * - Metric
-             - :func:`~graphbench.helpers.combinatorial_optimization.mis_size`
-             - :func:`~graphbench.helpers.combinatorial_optimization.max_cut_size`
-             - :func:`~graphbench.helpers.combinatorial_optimization.num_colors_used`
-           * - Validator
-             - :func:`~graphbench.helpers.combinatorial_optimization.validate_mis_solution`
-             - :func:`~graphbench.helpers.combinatorial_optimization.validate_max_cut_solution`
-             - :func:`~graphbench.helpers.combinatorial_optimization.validate_chrom_solution`
-
-
     Splits:
         All datasets use a 70% / 15% / 15% split for training, validation, and testing.
 
@@ -167,6 +126,47 @@ class CODataset(GraphDataset):
             dataset = Loader("data", "co_ba_small").load()
 
         In addition to this, we provide ``co`` as a convenience identifier to load all of the above datasets.
+
+
+    Helpers:
+        We provide additional helper functions for the unsupervised setting under
+        :mod:`graphbench.helpers.combinatorial_optimization`.
+
+        For each CO problem, we provide:
+
+        - An unsupervised loss function that can be used to train a model without ground-truth solutions,
+        - A decoder that converts the model's soft output to a discrete solution for evaluation at test time,
+        - A metric that computes the objective value of given solutions, and
+        - A validator that checks whether a given solution meets the constraints of the CO problem.
+
+        In general, validating the output of a decoder is not necessary, since the decoders already guarantee valid
+        outputs.
+
+        Details on each respective helper function can be found here:
+
+        .. list-table::
+           :header-rows: 1
+
+           * - Function
+             - MIS
+             - Max-Cut
+             - Graph Coloring
+           * - Loss
+             - :func:`~graphbench.helpers.combinatorial_optimization.mis_loss`
+             - :func:`~graphbench.helpers.combinatorial_optimization.max_cut_loss`
+             - :func:`~graphbench.helpers.combinatorial_optimization.graph_coloring_loss`
+           * - Decoder
+             - :func:`~graphbench.helpers.combinatorial_optimization.mis_decoder`
+             - :func:`~graphbench.helpers.combinatorial_optimization.max_cut_decoder`
+             - :func:`~graphbench.helpers.combinatorial_optimization.graph_coloring_decoder`
+           * - Metric
+             - :func:`~graphbench.helpers.combinatorial_optimization.mis_size`
+             - :func:`~graphbench.helpers.combinatorial_optimization.max_cut_size`
+             - :func:`~graphbench.helpers.combinatorial_optimization.num_colors_used`
+           * - Validator
+             - :func:`~graphbench.helpers.combinatorial_optimization.validate_mis_solution`
+             - :func:`~graphbench.helpers.combinatorial_optimization.validate_max_cut_solution`
+             - :func:`~graphbench.helpers.combinatorial_optimization.validate_chrom_solution`
 
 
     Usage Notes:
