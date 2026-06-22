@@ -18,6 +18,9 @@ def mis_loss(x: Tensor, batch: Batch, beta: float = 1.0) -> Tensor:
         x: Soft model output of shape ``[num_nodes]``.
         batch: Problem graphs.
         beta: Weight for the constraint violation penalty term (default 1.0).
+
+    Returns:
+        The loss value, size ``[]``.
     """
     x = torch.sigmoid(x)
     data_list = batch.to_data_list()
@@ -45,6 +48,9 @@ def max_cut_loss(x: Tensor, batch: Batch) -> Tensor:
     Args:
         x: Soft model output of shape ``[num_nodes]``.
         batch: Problem graphs.
+
+    Returns:
+        The loss value, size ``[]``.
     """
     x = torch.sigmoid(x)
     x = (x - 0.5) * 2
@@ -66,6 +72,9 @@ def graph_coloring_loss(x: Tensor, batch: Batch) -> Tensor:
     Args:
         x: Soft model output of shape ``[num_nodes, num_colors]``.
         batch: Problem graphs.
+
+    Returns:
+        The loss value, size ``[]``.
     """
     x = torch.sigmoid(x)
     x = (x - 0.5) * 2

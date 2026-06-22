@@ -21,6 +21,9 @@ def mis_size(solutions: list[Tensor], batch: Optional[Batch] = None) -> Tensor:
                    Each tensor of size ``[num_nodes]`` is a binary vector where a 1 indicates that the node is in the
                    independent set.
         batch: Ignored, argument is present for consistency (default ``None``).
+
+    Returns:
+        The average size of the independent sets in ``solutions``, size ``[]``.
     """
     size_list = [solution.sum() for solution in solutions]
     return torch.stack(size_list).mean()
@@ -39,6 +42,9 @@ def max_cut_size(solutions: list[Tensor], batch: Batch) -> Tensor:
                    Each tensor of size ``[num_nodes]`` is a binary vector where a 1 indicates that the node is in one
                    partition and a 0 indicates that it is in the other partition.
         batch: Problem graphs.
+
+    Returns:
+        The average size of the cuts in ``solutions``, size ``[]``.
     """
     # the docstring is purposefully not mentioning validate_max_cut_solution, since any binary partition is a valid
     # max cut solution
@@ -66,6 +72,9 @@ def num_colors_used(solutions: list[Tensor], batch: Optional[Batch] = None) -> T
         solutions: List of (valid) solutions to the graph coloring problem.
                    Each tensor of size ``[num_nodes]`` contains integer color assignments for each node.
         batch: Ignored, argument is present for consistency (default ``None``).
+
+    Returns:
+        The average number of colors used by the graph colorings in ``solutions``, size ``[]``.
     """
     num_colors_used_list = [colors.unique().size(0) for colors in solutions]
     return torch.tensor(num_colors_used_list).mean(dtype=torch.float)
