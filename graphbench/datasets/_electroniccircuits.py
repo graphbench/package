@@ -28,9 +28,9 @@ class ECDataset(GraphDataset):
 
 
     Note:
-        This class **should only be used directly when generating new datasets**.
-        To access provided datasets, please consider using :class:`graphbench.Loader`.
-        The sections below give details on the data available through the :class:`graphbench.Loader` interface.
+        This class **should not be used directly**, please use :class:`graphbench.Loader` instead to access the provided
+        datasets.
+        The purpose of this page is merely to provide details on the dataset.
 
 
     Overview:
