@@ -7,8 +7,13 @@
 import os
 import sys
 
-# Add the project root to sys.path so that Sphinx can find the modules
-sys.path.insert(0, os.path.abspath(".."))
+# Add docs/ and project root to sys.path before importing local helpers.
+DOCS_DIR = os.path.abspath(os.path.dirname(__file__))
+PROJECT_ROOT = os.path.abspath(os.path.join(DOCS_DIR, ".."))
+sys.path.insert(0, DOCS_DIR)
+sys.path.insert(0, PROJECT_ROOT)
+
+from _return_type_hook import _inline_rendered_return_type_fields
 
 
 
@@ -34,6 +39,11 @@ extensions = [
 ]
 
 exclude_patterns = ["_build"]
+
+
+def setup(app):
+    # Connect custom hook that changes how return types are rendered
+    app.connect("doctree-resolved", _inline_rendered_return_type_fields)
 
 
 
@@ -83,7 +93,7 @@ napoleon_numpy_docstring = False
 
 # These names will also be recognized as section headers in Google-style docstrings,
 # in addition to the default ones like "Args", "Returns", etc.
-napoleon_custom_sections = ["Overview", "Graph Attributes", "Targets", "List of Available Datasets", "Splits", "Usage Notes"]
+napoleon_custom_sections = ["Overview", "Helpers", "Graph Attributes", "Targets", "List of Available Datasets", "Splits", "Usage Notes"]
 
 
 # -- MathJax configuration ---------------------------------------------------
