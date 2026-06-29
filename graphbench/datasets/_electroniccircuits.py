@@ -28,9 +28,9 @@ class ECDataset(GraphDataset):
 
 
     Note:
-        This class **should not be used directly**, please use :class:`graphbench.Loader` instead to access the provided
-        datasets.
-        The purpose of this page is merely to provide details on the dataset.
+        This class **should only be used directly when generating new datasets**.
+        To access provided datasets, please consider using :class:`graphbench.Loader`.
+        The sections below give details on the data available through the :class:`graphbench.Loader` interface.
 
 
     Overview:
@@ -75,12 +75,6 @@ class ECDataset(GraphDataset):
             * - ``x``
               - ``[num_nodes, 1, 9]``
               - One-hot encoded vectors representing device component properties
-            * - ``edge_index``
-              - ``[2, num_edges]``
-              - Edge indices representing electrical connections between device components
-            * - ``edge_attr``
-              - None
-              - No edge features are provided
             * - ``duty``
               - ``[1]``
               - Duty cycle value for the circuit
@@ -98,23 +92,20 @@ class ECDataset(GraphDataset):
 
 
     Targets:
-        The dataset provides two distinct targets corresponding to circuit performance metrics:
+        The dataset provides two distinct targets corresponding to circuit performance metrics. The desired target can be selected by loading the dataset with the correct suffix, as documented below.
 
 
         .. list-table::
             :header-rows: 1
 
 
-            * - Target name
-              - Task
+            * - Task
               - Output size
               - Description
-            * - ``eff``
-              - Power Conversion Efficiency
+            * - Power Conversion Efficiency (datasets with suffix ``_eff``)
               - ``[1]``
               - Continuous target representing the power conversion efficiency, raction of input power delivered to the load.
-            * - ``vout``
-              - Voltage Conversion Ratio
+            * - Voltage Conversion Ratio (datasets with suffix ``_vout``)
               - ``[1]``
               - Continuous target representing the output voltage (Vout), which is the output-to-input voltage.
 
@@ -156,14 +147,6 @@ class ECDataset(GraphDataset):
 
 
     Usage Notes:
-        The dataset class supports two modes:
-
-
-        1. Download and load pre-generated graphs.
-        2. Generate synthetic graphs using a procedural circuit generator (currently not fully supported).
-
-
-        We recommend using :class:`graphbench.Loader` rather than instantiating this class directly.
         The class supports various normalization methods for the voltage conversion ratio target,
         including ``min-max``, ``z-score``, ``IQR``, and ``reward``-based normalization.
     """
@@ -192,9 +175,9 @@ class ECDataset(GraphDataset):
             pre_transform: Optional PyG transform applied before saving data objects to disk.
             pre_filter: A function that indicates whether a data object should be included in the final dataset.
             generate: If True, generate synthetic graphs instead of downloading.
+            cleanup_raw: If True, remove raw files after processing.
             target_vout: Optional target value for vout normalization.
             vout_norm_method: Normalization method for vout labels.
-            cleanup_raw: If True, remove raw files after processing.
             load_preprocessed: If True, load existing processed objects instead of regenerating.
         """
 
