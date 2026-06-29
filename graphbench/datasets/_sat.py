@@ -44,14 +44,87 @@ _logger = get_logger(__name__)
 
 
 class SATDataset(GraphDataset):
-    """
-    sat dataset loader
-    ------------------
+    r"""
+    Boolean Satisfiability (SAT) Solving datasets.
 
-    Prepares several SAT benchmark datasets as PyG `InMemoryDataset` objects.
+    Note:
+        This class **should not be used directly**, please use :class:`graphbench.Loader` instead to access the provided datasets.
+        The purpose of this page is merely to provide details on the dataset.
 
-    The class handles downloading SAT datasets and supplementing labels via csv files.
-    """
+        
+    Overview:
+            The SAT datasets include formulae from diverse real-world applications and synthetically generated instances.
+            
+            We include tasks for two problem settings:
+
+            - **Performance Prediction**: a regression problem whose goal is to predict the computation time of SAT solvers on unseen instances.
+            - **Algorithm Selection**: a multi-class classification problem that aims to select the best performing algorithm for a given SAT instance. 
+
+            Each instance is represented through 3 features, capturing structural views of SAT formulae:
+
+            - **Variable-Clause Graph (VCG)**: a bipartite, undirected graph with a node for each variable :math:`v`  and each clause :math:`c`, where an edge connects a variable to a clause if and only if the variable appears in that clause.
+            - **Clause Graph (LCG)**: an undirected graph with one node per clause, where two clauses :math:`c_i` and :math:`c_j` are connected if they share at least one negated literal.
+            - **Variable Graph (VG)**: an undirected graph with one node per variable, where two variables :math:`v_i` and :math:`v_j` are connected if they co-occur in at least one clause.
+
+            The dataset covers 3 scales:
+            
+            - Small: up to 3,000 variables and 15,000 clause
+            - Medium: up to 20,000 variables and 80,000 clause
+            - Large: includes all formulae 
+
+            In total, the dataset comprises over 100K problem instances (spanning from a few thousand to over 25M variables and 1.8B clauses). This results in 208,788 graphs ranging from 2 to 20,799 nodes and 2 to 4,109,936 edges, with an overall size of approximately 16GB.
+
+            Please refer to the `GraphBench paper <https://arxiv.org/abs/2512.04475>`__ for the exact parameters used for formula generation, dataset selection, and solver configurations.
+    Splits:
+        The SAT solving datasets use a fixed 80% / 10% / 10% split for training, validation, and testing across the SMALL, MEDIUM, and LARGE dataset sizes.
+
+    Graph Attributes:
+        Each graph has the following attributes:
+        
+        .. list-table::
+           :header-rows: 1
+
+           * - Attribute name
+             - Size
+             - Description
+           * - ``x``
+             - ``[num_nodes, 12]``
+             - Node features for the SAT graph.
+           * - ``y``
+             - ``[1, 11]``
+             - Target vector over 11 solvers.
+
+    List of Available Datasets:
+        We provide one dataset for each combination of graph encoding and task target.
+        These can be loaded with ``sat_{graph_encoding}_{target}``, where ``graph_encoding`` is one of
+        ``lcg``,
+        ``vcg``,
+        or ``vg``,
+        and ``target`` is one of ``as`` or ``epm``.
+
+        The valid dataset names for the loader are:
+
+        - ``sat_lcg_as``
+        - ``sat_vcg_as``
+        - ``sat_vg_as``
+        - ``sat_lcg_epm``
+        - ``sat_vcg_epm``
+        - ``sat_vg_epm``
+
+        For example:
+
+        .. code:: python
+
+            from graphbench import Loader
+            # loads the SAT Variable-Clause Graph dataset for Algorithm Selection
+            dataset = Loader("data", "sat_vg_as").load()
+        
+        In addition to this, we provide ``sat`` as a convenience identifier to load all of the above datasets.
+
+    Usage Notes:
+        The dataset class automatically handles the downloading of supplementary CSV files containing labels and SATZILLA features. 
+        Currently, the loader defaults to using only small formula sizes.
+"""
 
     def __init__(
         self,
@@ -68,34 +141,47 @@ class SATDataset(GraphDataset):
 
         # TODO: This should be removed in the future -- the user will download these files
         load_preprocessed = False,):
-        
+        """
+        Args:
+            name: Dataset identifier in the form ``electronic_circuits_{component_size}_{target}``, e.g. ``electronic_circuits_7_eff``.
+            split: Whether to load the train, validation, or test split of the dataset.
+            root: Root directory where the dataset folder will be created.
+            transform: Optional PyG transform applied to data objects before every access.
+            pre_transform: Optional PyG transform applied before saving data objects to disk.
+            pre_filter: A function that indicates whether a data object should be included in the final dataset.
+            generate: If True, generate synthetic graphs instead of downloading.
+            use_satzilla_features: If True, include SATZILLA features in the dataset.
+            cleanup_raw: If True, remove raw files after processing.
+            solver: Optional solver name to filter the dataset for a specific solver. If None, all solvers are included.
+            load_preprocessed: If True, load existing processed objects instead of regenerating.
+        """
 
 
         #currently downloads everything at once for a single dataset. Up to the user to manually unpack it so far
 
         self.SOURCES: Dict[str, SourceSpec] = {
             "sat_lcg_as": SourceSpec(
-                url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_SAT/resolve/main/data_small_lcg_no_trans.pt.xz",
+                url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_SAT/resolve/main/data_small_lcg.pt.xz",
                 raw_folder="sat_lcg_as",
             ),
             "sat_vcg_as": SourceSpec(
-                url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_SAT/resolve/main/data_small_vcg_no_trans.pt.xz",
+                url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_SAT/resolve/main/data_small_vcg.pt.xz",
                 raw_folder="sat_vcg_as",
             ),
             "sat_vg_as": SourceSpec(
-                url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_SAT/resolve/main/data_small_vg_no_trans.pt.xz",
+                url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_SAT/resolve/main/data_small_vg.pt.xz",
                 raw_folder="sat_vg_as",
             ),
             "sat_lcg_epm": SourceSpec(
-                url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_SAT/resolve/main/data_small_lcg_no_trans.pt.xz",
+                url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_SAT/resolve/main/data_small_lcg.pt.xz",
                 raw_folder="sat_lcg_epm",
             ),
             "sat_vcg_epm": SourceSpec(
-                url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_SAT/resolve/main/data_small_vcg_no_trans.pt.xz",
+                url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_SAT/resolve/main/data_small_vcg.pt.xz",
                 raw_folder="sat_vcg_epm",
             ),
             "sat_vg_epm": SourceSpec(
-                url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_SAT/resolve/main/data_small_vg_no_trans.pt.xz",
+                url="https://huggingface.co/datasets/log-rwth-aachen/Graphbench_SAT/resolve/main/data_small_vg.pt.xz",
                 raw_folder="sat_vg_epm",
             ),
         }
@@ -470,7 +556,7 @@ class SATDataset(GraphDataset):
     def get(self, idx):
         data = super().get(idx)
 
-        if self.graph_type == "vcg" or self.graph_type == "lcg":
+        if (self.graph_type == "vcg" or self.graph_type == "lcg") and isinstance(data, HeteroData):
             data = data.to_homogeneous()
             data = self.to_undirected(data)
 
