@@ -26,12 +26,10 @@ class ECDataset(GraphDataset):
     r"""
     Electronic Circuits (EC) datasets.
 
-
     Note:
         This class **should not be used directly**, please use :class:`graphbench.Loader` instead to access the provided
         datasets.
         The purpose of this page is merely to provide details on the dataset.
-
 
     Overview:
         We model analog circuit design as graphs :math:`G = (V, E)`, where the node set :math:`V` encodes device components,
@@ -39,21 +37,16 @@ class ECDataset(GraphDataset):
         with the goal of predicting two continuous performance metrics: the *voltage conversion ratio* and
         the *power conversion efficiency*.
 
-
         The graphs in this dataset are of three complexity levels, generated from random valid topologies with
         5, 7, and 10 components. Each instance is simulated with
         `NGSPICE <https://ngspice.sourceforge.io/>`_
         to obtain ground truth labels for both performance metrics.
 
-
-        The dataset comprises more than 350,000 graphs with 13–24 nodes and 30–56 edges across the three complexity levels. Concretely,
+        The dataset comprises more than 350,000 graphs with 13-24 nodes and 30-56 edges across the three complexity levels. Concretely,
         there are 334,419 graphs with 5 components, 13,711 graphs with 7 components, and 4,630 graphs with 10 components.
-
 
         For details on the circuit generation methodology and exact graph configurations, please refer to the
         `GraphBench paper <https://arxiv.org/abs/2512.04475>`__.
-
-
 
 
     Splits:
@@ -64,10 +57,8 @@ class ECDataset(GraphDataset):
     Graph Attributes:
         Each graph has the following attributes:
 
-
         .. list-table::
             :header-rows: 1
-
 
             * - Attribute name
               - Size
@@ -87,29 +78,27 @@ class ECDataset(GraphDataset):
             * - ``terminal_ids``
               - ``[num_terminals]``
               - Terminal identifiers for circuit interconnections
-
-
+            * - ``y``
+              - ``[1]``
+              - Target, see below for details
 
 
     Targets:
-        The dataset provides two distinct targets corresponding to circuit performance metrics. The desired target can be selected by loading the dataset with the correct suffix, as documented below.
-
+        The dataset provides two distinct targets corresponding to circuit performance metrics.
+        The desired target can be selected by loading the dataset with the correct suffix, as documented below.
 
         .. list-table::
             :header-rows: 1
 
-
             * - Task
-              - Output size
+              - Dataset suffix
               - Description
-            * - Power Conversion Efficiency (datasets with suffix ``_eff``)
-              - ``[1]``
-              - Continuous target representing the power conversion efficiency, raction of input power delivered to the load.
-            * - Voltage Conversion Ratio (datasets with suffix ``_vout``)
-              - ``[1]``
+            * - Power Conversion Efficiency
+              - ``_eff``
+              - Continuous target representing the power conversion efficiency, fraction of input power delivered to the load.
+            * - Voltage Conversion Ratio
+              - ``_vout``
               - Continuous target representing the output voltage (Vout), which is the output-to-input voltage.
-
-
 
 
     List of Available Datasets:
@@ -120,9 +109,7 @@ class ECDataset(GraphDataset):
         or ``10``,
         and ``target`` is one of ``eff`` or ``vout``.
 
-
         This totals 6 valid dataset names:
-
 
         - ``electronic_circuits_5_eff``
         - ``electronic_circuits_5_vout``
@@ -131,17 +118,13 @@ class ECDataset(GraphDataset):
         - ``electronic_circuits_10_eff``
         - ``electronic_circuits_10_vout``
 
-
         For example:
 
-
         .. code:: python
-
 
             from graphbench import Loader
             # Loads circuits with 7 components, predicting voltage conversion ratio
             dataset = Loader("data", "electronic_circuits_7_vout").load()
-
 
         In addition to this, we provide ``electronic_circuits`` as a convenience identifier to load all of the above datasets.
 
