@@ -23,15 +23,132 @@ _logger = get_logger(__name__)
 
 
 class ECDataset(GraphDataset):
-    """
-    electronic circuits dataset loader
-    ----------------------------------
+    r"""
+    Electronic Circuits (EC) datasets.
 
-    A PyTorch Geometric `InMemoryDataset`
-    implementation for Electronic Circuits benchmark datasets. It downloads and
-    unpacks archived JSON representations of circuit instances and converts them
-    into PyG `Data` objects. The class supports loading preprocessed caches and
-    offers utilities for label normalization and dataset splitting.
+
+    Note:
+        This class **should only be used directly when generating new datasets**.
+        To access provided datasets, please consider using :class:`graphbench.Loader`.
+        The sections below give details on the data available through the :class:`graphbench.Loader` interface.
+
+
+    Overview:
+        We model analog circuit design as graphs :math:`G = (V, E)`, where the node set :math:`V` encodes device components,
+        and the edges represent electrical interconnections between ports. Each graph corresponds to a circuit,
+        with the goal of predicting two continuous performance metrics: the *voltage conversion ratio* and
+        the *power conversion efficiency*.
+
+
+        The graphs in this dataset are of three complexity levels, generated from random valid topologies with
+        5, 7, and 10 components. Each instance is simulated with
+        `NGSPICE <https://ngspice.sourceforge.io/>`_
+        to obtain ground truth labels for both performance metrics.
+
+
+        The dataset comprises more than 350,000 graphs with 13–24 nodes and 30–56 edges across the three complexity levels. Concretely,
+        there are 334,419 graphs with 5 components, 13,711 graphs with 7 components, and 4,630 graphs with 10 components.
+
+
+        For details on the circuit generation methodology and exact graph configurations, please refer to the
+        `GraphBench paper <https://arxiv.org/abs/2512.04475>`__.
+
+
+
+
+    Splits:
+        All datasets use a 70% / 10% / 20% random split for training, validation,
+        and testing.
+
+
+    Graph Attributes:
+        Each graph has the following attributes:
+
+
+        .. list-table::
+            :header-rows: 1
+
+
+            * - Attribute name
+              - Size
+              - Description
+            * - ``x``
+              - ``[num_nodes, 1, 9]``
+              - One-hot encoded vectors representing device component properties
+            * - ``duty``
+              - ``[1]``
+              - Duty cycle value for the circuit
+            * - ``device_ids``
+              - ``[num_devices]``
+              - Device type identifiers for each device in the circuit
+            * - ``port_ids``
+              - ``[num_ports]``
+              - Port identifiers for circuit connections
+            * - ``terminal_ids``
+              - ``[num_terminals]``
+              - Terminal identifiers for circuit interconnections
+
+
+
+
+    Targets:
+        The dataset provides two distinct targets corresponding to circuit performance metrics. The desired target can be selected by loading the dataset with the correct suffix, as documented below.
+
+
+        .. list-table::
+            :header-rows: 1
+
+
+            * - Task
+              - Output size
+              - Description
+            * - Power Conversion Efficiency (datasets with suffix ``_eff``)
+              - ``[1]``
+              - Continuous target representing the power conversion efficiency, raction of input power delivered to the load.
+            * - Voltage Conversion Ratio (datasets with suffix ``_vout``)
+              - ``[1]``
+              - Continuous target representing the output voltage (Vout), which is the output-to-input voltage.
+
+
+
+
+    List of Available Datasets:
+        We provide one dataset for each combination of component complexity and performance metric target.
+        These can be loaded with ``electronic_circuits_{component_size}_{target}``, where ``component_size`` is one of
+        ``5``,
+        ``7``,
+        or ``10``,
+        and ``target`` is one of ``eff`` or ``vout``.
+
+
+        This totals 6 valid dataset names:
+
+
+        - ``electronic_circuits_5_eff``
+        - ``electronic_circuits_5_vout``
+        - ``electronic_circuits_7_eff``
+        - ``electronic_circuits_7_vout``
+        - ``electronic_circuits_10_eff``
+        - ``electronic_circuits_10_vout``
+
+
+        For example:
+
+
+        .. code:: python
+
+
+            from graphbench import Loader
+            # Loads circuits with 7 components, predicting voltage conversion ratio
+            dataset = Loader("data", "electronic_circuits_7_vout").load()
+
+
+        In addition to this, we provide ``electronic_circuits`` as a convenience identifier to load all of the above datasets.
+
+
+    Usage Notes:
+        The class supports various normalization methods for the voltage conversion ratio target,
+        including ``min-max``, ``z-score``, ``IQR``, and ``reward``-based normalization.
     """
 
     def __init__(
@@ -50,16 +167,20 @@ class ECDataset(GraphDataset):
         load_preprocessed = False,
     ):
         """
-        Initialize the Electronic Circuits dataset wrapper.
-
-        Parameters
-        - name (str): Dataset identifier, e.g. 'electronic_circuits_5_eff'.
-        - split (str): 'train', 'val' or 'test'.
-        - root (str|Path): Root dataset directory.
-        - generate (bool): If True, attempt to generate dataset (not supported).
-        - target_vout (float|None): Optional target value for vout normalization.
-        - vout_norm_method (str): Normalization method for vout labels.
+        Args:
+            name: Dataset identifier in the form ``electronic_circuits_{component_size}_{target}``, e.g. ``electronic_circuits_7_eff``.
+            split: Whether to load the train, validation, or test split of the dataset.
+            root: Root directory where the dataset folder will be created.
+            transform: Optional PyG transform applied to data objects before every access.
+            pre_transform: Optional PyG transform applied before saving data objects to disk.
+            pre_filter: A function that indicates whether a data object should be included in the final dataset.
+            generate: If True, generate synthetic graphs instead of downloading.
+            cleanup_raw: If True, remove raw files after processing.
+            target_vout: Optional target value for vout normalization.
+            vout_norm_method: Normalization method for vout labels.
+            load_preprocessed: If True, load existing processed objects instead of regenerating.
         """
+
         #currently downloads everything at once for a single dataset. Up to the user to manually unpack it so far
         self.SOURCES: Dict[str, SourceSpec] = {
             "electronic_circuits_5_eff": SourceSpec(
@@ -201,11 +322,8 @@ class ECDataset(GraphDataset):
                 y=y,
                 duty=duty,
                 device_ids=torch.tensor(datum['device_ids']),
-                device_ids_len=torch.tensor(datum['device_ids_len']),
                 port_ids=torch.tensor(datum['port_ids']),
-                port_ids_len=torch.tensor(datum['port_ids_len']),
                 terminal_ids=torch.tensor(datum['terminal_ids']),
-                terminal_ids_len=torch.tensor(datum['terminal_ids_len']),
             ))
         return data_list
     
