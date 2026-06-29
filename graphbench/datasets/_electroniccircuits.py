@@ -46,8 +46,8 @@ class ECDataset(GraphDataset):
         to obtain ground truth labels for both performance metrics.
 
 
-        The dataset comprises 93,000 graphs with 13–24 nodes and 30–56 edges across the three complexity levels. Concretely,
-        there are 73000 graphs with 5 components, 14000 graphs with 7 components, and 6000 graphs with 10 components.
+        The dataset comprises more than 350,000 graphs with 13–24 nodes and 30–56 edges across the three complexity levels. Concretely,
+        there are 334,419 graphs with 5 components, 13,711 graphs with 7 components, and 4,630 graphs with 10 components.
 
 
         For details on the circuit generation methodology and exact graph configurations, please refer to the
