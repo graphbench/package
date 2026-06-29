@@ -13,7 +13,8 @@ PROJECT_ROOT = os.path.abspath(os.path.join(DOCS_DIR, ".."))
 sys.path.insert(0, DOCS_DIR)
 sys.path.insert(0, PROJECT_ROOT)
 
-from _return_type_hook import _inline_rendered_return_type_fields
+# ruff doesn't like that there is code before the import, but that needs to be there so python can find the module
+from _return_type_hook import _inline_rendered_return_type_fields  # noqa: E402
 
 
 
