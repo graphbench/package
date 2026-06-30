@@ -1,5 +1,9 @@
+from typing import Callable, Optional, Union, TypeAlias
+
 import numpy as np
 import torch
+from torch import Tensor
+from torch_geometric.data import Batch, Data
 import torchmetrics
 
 from graphbench.helpers.combinatorial_optimization import (
@@ -21,6 +25,14 @@ from graphbench._weatherforecasting_helpers import (
 )
 
 
+# note that this is not the same having the Union inside the Callable, which would be too permissive
+_Metric: TypeAlias = Union[
+    Callable[[Tensor, Tensor], Tensor],
+    Callable[[Tensor, Batch], Tensor],
+    Callable[[list[Data], list[Data]], Tensor],
+]
+
+
 class Evaluator():
     """Select and compute metrics for specified benchmark tasks.
 
@@ -31,21 +43,25 @@ class Evaluator():
     benchmarks (e.g., ClosedGap, ChipDesignScore, Weather_MSE).
 
     Args:
-        name (str): The named benchmark. The implementation reads
-            `master.csv` in the module directory and expects a row for
-            `name` containing `task` and `metric` columns.
-
+        name: The named benchmark. The implementation reads
+              `master.csv` in the module directory and expects a row for
+              `name` containing `task` and `metric` columns.
     """
 
-    def __init__(self, name):
-        self.name = name 
+    def __init__(self, name: str):
         self.csv_info = get_master_df()
 
-        self.task = self.csv_info.loc[self.name]['task']
-        self.metric = self.csv_info.loc[self.name]['metric'].split(';')
+        self.task = self.csv_info.loc[name]['task']
+        self.metric = self.csv_info.loc[name]['metric'].split(';')
 
-
-    def _check_input(self, y_pred, y_true=None, batch=None):
+    def _check_input(
+        self,
+        y_pred: Union[Tensor, np.ndarray],
+        y_true: Optional[Union[Tensor, np.ndarray]] = None,
+        batch: Optional[Batch] = None,
+    ) -> tuple[Tensor, Union[Tensor, Batch]]:
+        if batch is None and y_true is None:
+            raise ValueError("Either y_true or batch must be provided.")
         if batch is not None:
             if isinstance(y_pred, np.ndarray):
                 y_pred = torch.from_numpy(y_pred)
@@ -59,18 +75,18 @@ class Evaluator():
 
         if y_pred.size(0) != y_true.size(0):
             raise ValueError(f"y_pred and y_true must have the same number of samples. Got {y_pred.size(0)} and {y_true.size(0)}.")
-        
+
         if not isinstance(y_pred, torch.Tensor) and not isinstance(y_pred, np.ndarray):
             raise ValueError(f"y_pred must be a torch.Tensor or numpy.ndarray. Got {type(y_pred)}.")
         if not isinstance(y_true, torch.Tensor) and not isinstance(y_true, np.ndarray):
             raise ValueError(f"y_true must be a torch.Tensor or numpy.ndarray. Got {type(y_true)}.")
-        
+
         if not y_true.ndim == 2 or not y_pred.ndim == 2:
             raise RuntimeError('y_true and y_pred are supposed to be 2-dim arrays, {}-dim array given'.format(y_true.ndim))
 
-        return y_true, y_pred
+        return y_pred, y_true
 
-    def _get_metric_from_name(self, metric_name):
+    def _get_metric_from_name(self, metric_name: str) -> _Metric:
         """Return a callable that computes the named metric.
 
         The callable returned generally accepts `(y_pred, y_true)` and
@@ -96,28 +112,30 @@ class Evaluator():
             'MisSize': self.get_mis_size(),
             'MaxCutSize': self.get_max_cut_size(),
             'NumColorsUsed': self.get_num_colors_used(),
-            
         }
         if metric_name in metric_dict:
             return metric_dict[metric_name]
         else:
             raise ValueError(f"Metric {metric_name} not recognized.")
 
-
-    def _get_metric(self):
+    def _get_metric(self) -> Union[_Metric, list[_Metric]]:
         print(f"Using metric: {self.metric} for task: {self.task}")
         # Check length of metric list and return either single callable
         # or list of callables.
         if len(self.metric) == 1:
             return self._get_metric_from_name(self.metric[0])
         else:
-            metric_list =[]
+            metric_list = []
             for metric in self.metric:
                 metric_list.append(self._get_metric_from_name(metric))
             return metric_list
-        
 
-    def evaluate(self, y_pred, y_true=None, batch=None):
+    def evaluate(
+        self,
+        y_pred: Union[Tensor, np.ndarray],
+        y_true: Optional[Union[Tensor, np.ndarray]] = None,
+        batch: Optional[Batch] = None,
+    ) -> Union[float, list[float]]:
         """
         Computes the selected metric(s) for the given predictions and true values.
         Expects tensors of shape (N, K) where N is the number of samples (nodes or graphs) and K is either the number of classes (for multiclass tasks) or the number of tasks to be evaluated. 
@@ -136,13 +154,13 @@ class Evaluator():
                 return [met(y_pred, batch).item() for met in metric]
             return metric(y_pred, batch).item()
 
-        y_true, y_pred = self._check_input(y_pred, y_true)
+        y_pred, y_true = self._check_input(y_pred, y_true)
 
         if isinstance(metric, list):
             return [met(y_pred, y_true).item() for met in metric]
         return metric(y_pred, y_true).item()
-                
-    def get_f1(self):
+
+    def get_f1(self) -> Callable[[Tensor, Tensor], Tensor]:
         """Return a callable computing binary F1.
 
         Returns:
@@ -152,22 +170,22 @@ class Evaluator():
         f1 = torchmetrics.F1Score(task="binary")
         return lambda x, y: f1(x, y)
 
-    def get_acc(self):
+    def get_acc(self) -> Callable[[Tensor, Tensor], Tensor]:
         """Return a callable computing binary accuracy."""
         acc = torchmetrics.Accuracy(task="binary")
         return lambda x, y: acc(x, y)
 
-    def get_spearman(self, index):
+    def get_spearman(self, index: int) -> Callable[[Tensor, Tensor], Tensor]:
         """Return a spearman correlation callable for the given output index."""
         spearman = torchmetrics.SpearmanCorrCoef()
         return lambda x, y: spearman(x[:,index], y[:,index])
-    
-    def get_r2(self, index):
+
+    def get_r2(self, index: int) -> Callable[[Tensor, Tensor], Tensor]:
         """Return an R2 score callable for the given output index."""
         r2 = torchmetrics.R2Score()
         return lambda x, y: r2(x[:,index], y[:,index])
 
-    def get_closed_gap(self):
+    def get_closed_gap(self) -> Callable[[Tensor, Tensor], Tensor]:
         """Return a callable computing ClosedGap.
 
         Note: This metric expects `y_true` shaped (N, K) of runtimes or
@@ -176,15 +194,15 @@ class Evaluator():
         """
         return lambda y_pred, y_true: self._get_closed_gap(y_pred, y_true)
 
-    def get_chip_design_score(self):
+    def get_chip_design_score(self) -> Callable[[list[Data], list[Data]], Tensor]:
         """Return a callable computing ChipDesignScore."""
         return lambda y_pred, y_true: self._get_chip_design_score(y_pred, y_true)
 
-    def get_weather_mse(self):
+    def get_weather_mse(self) -> Callable[[Tensor, Tensor], Tensor]:
         """Return a callable computing Weather_MSE."""
         return lambda y_pred, y_true: self._get_weather_mse(y_pred, y_true)
 
-    def get_mis_size(self):
+    def get_mis_size(self) -> Callable[[Tensor, Batch], Tensor]:
         """Return a callable computing MisSize.
 
         Note: This callable expects `(x, batch)` rather than the standard
@@ -194,7 +212,7 @@ class Evaluator():
             mis_decoder(x, batch, dec_length=dec_length, num_seeds=num_seeds)
         )
 
-    def get_max_cut_size(self):
+    def get_max_cut_size(self) -> Callable[[Tensor, Batch], Tensor]:
         """Return a callable computing MaxCutSize.
 
         Note: This callable expects `(x, batch)` rather than the standard
@@ -202,15 +220,20 @@ class Evaluator():
         """
         return lambda x, batch: max_cut_size(max_cut_decoder(x, batch), batch)
 
-    def get_num_colors_used(self):
+    def get_num_colors_used(self) -> Callable[[Tensor, Batch], Tensor]:
         """Return a callable computing NumColorsUsed.
 
         Note: This callable expects `(x, batch)` rather than the standard
         `(y_pred, y_true)` signature.
         """
         return lambda x, batch, num_seeds=1: num_colors_used(graph_coloring_decoder(x, batch, num_seeds=num_seeds))
-    
-    def _get_closed_gap(self,y_pred, y_true, inference_times=None):
+
+    def _get_closed_gap(
+        self,
+        y_pred: Tensor,
+        y_true: Tensor,
+        inference_times: Optional[Union[list[Tensor], tuple[Tensor, ...]]] = None,
+    ) -> Tensor:
 
         # Compute weighed predicted best performance
         # predicted_best_performance = torch.sum(y_pred * y_true, dim=1)
@@ -246,9 +269,8 @@ class Evaluator():
         closed_gap = numerator / denominator
 
         return closed_gap
-    
 
-    def _get_chip_design_score(self,y_pred, y_true):
+    def _get_chip_design_score(self, y_pred: list[Data], y_true: list[Data]) -> Tensor:
         """Compute a chip design equivalence score.
 
         This method expects `y_pred` and `y_true` to be sequences of
@@ -257,11 +279,11 @@ class Evaluator():
         outputs. The returned score is in >= 0 with 100 as the score obtained for providing the reference solution.
         """
         if len(y_pred) != len(y_true):
-            return 0.0
-            
+            return torch.tensor(0.)
+
         total_score = 0.0
         N = len(y_pred)
-        
+
         for pred_circuit, target_circuit in zip(y_pred, y_true):
             try:
                 # Extract input/output counts from target circuit
@@ -271,37 +293,38 @@ class Evaluator():
                 else:
                     # Extract from node features using proper extraction logic
                     num_inputs, num_outputs = self.extract_input_output_counts(target_circuit.x)
-                
+
                 # Set num_inputs and num_outputs on both circuits
                 pred_circuit.num_inputs = num_inputs
                 pred_circuit.num_outputs = num_outputs
                 target_circuit.num_inputs = num_inputs  
                 target_circuit.num_outputs = num_outputs
-                
+
                 # Simulate both circuits
                 pred_sim = VectorizedCircuitSimulator(pred_circuit)
                 target_sim = VectorizedCircuitSimulator(target_circuit)
-                
+
                 pred_truth = pred_sim.simulate_all_patterns()
                 target_truth = target_sim.simulate_all_patterns()
-                
+
                 # Check equivalence and get score
                 sample_score = self._equivalence_score(
                     pred_truth, target_truth,
                     pred_circuit.x.shape[0], 
                     target_circuit.x.shape[0] 
                 )
-                
+
                 total_score += sample_score
-                
+
             except Exception as e:
                 # Skip problematic samples 
                 print(f"Skipping sample due to error: {e}")
                 continue
-        
-        return (100.0 * total_score) / N if N > 0 else 0.0
-    
-    def _extract_truth_vectors(self,truth_vectors, num_inputs, num_outputs):
+
+        score = (100.0 * total_score) / N if N > 0 else 0.0
+        return torch.tensor(score)
+
+    def _extract_truth_vectors(self, truth_vectors, num_inputs, num_outputs):
         """Fast truth vector extraction with numpy operations.
 
         Convert arrays with possible -1 padding to a compact boolean
@@ -310,7 +333,7 @@ class Evaluator():
         """
         expected_length = 2**num_inputs
         result = np.zeros((num_outputs, expected_length), dtype=np.uint8)
-        
+
         for output_idx, truth_vector in enumerate(truth_vectors):
             # Find length (-1 padding)
             length = 0
@@ -318,22 +341,21 @@ class Evaluator():
                 if val == -1:
                     break
                 length += 1
-            
+
             if length != expected_length:
                 return None  # Invalid truth vector
-            
+
             result[output_idx] = truth_vector[:length]
-        
+
         return result
 
-
-    def _extract_input_output_counts(self,x):
+    def _extract_input_output_counts(self, x: Tensor):
         """Extract the number of input and output nodes from `x`.
 
         The method assumes `x` has three columns encoding node types
         as a one-hot vector: [AND, INPUT, OUTPUT]. It counts rows
         matching the `INPUT` and `OUTPUT` patterns.
-        
+
         Args:
             x (Tensor): Node feature tensor of shape `(num_nodes, 3)`.
 
@@ -342,19 +364,24 @@ class Evaluator():
         """
         if x.shape[1] != 3:
             raise ValueError(f"Expected node features with 3 columns [AND, INPUT, OUTPUT], got {x.shape[1]}")
-        
+
         # Count input nodes: [0, 1, 0]
         input_mask = (x[:, 1] == 1) & (x[:, 0] == 0) & (x[:, 2] == 0)
         num_inputs = input_mask.sum().item()
-        
+
         # Count output nodes: [0, 0, 1]  
         output_mask = (x[:, 2] == 1) & (x[:, 0] == 0) & (x[:, 1] == 0)
         num_outputs = output_mask.sum().item()
-        
+
         return num_inputs, num_outputs
 
-
-    def _equivalence_score(self, predicted_truth_vectors, original_truth_vectors, num_nodes_generated, num_nodes_test):
+    def _equivalence_score(
+        self,
+        predicted_truth_vectors: np.ndarray,
+        original_truth_vectors: np.ndarray,
+        num_nodes_generated: int,
+        num_nodes_test: int,
+    ) -> float:
         if np.array_equal(predicted_truth_vectors, original_truth_vectors):
             # equivalence
             if num_nodes_generated > 0:
@@ -365,69 +392,69 @@ class Evaluator():
             # No match
             return 0.0
 
-    
-    def _get_weather_mse(self, y_pred, y_true):
+    # TODO I annotated y_true as Tensor, because masked_loss expects a Tensor. However, in the comment it looks like
+    #      y_true needs to be a Data object. To me it looks like the implementation is simply incorrect.
+    def _get_weather_mse(self, y_pred: Tensor, y_true: Tensor) -> Tensor:
         grid_variables = [
-        '2m_temperature', 'mean_sea_level_pressure', '10m_v_component_of_wind',
-        '10m_u_component_of_wind', 'total_precipitation_6hr', 'temperature',
-        'geopotential', 'u_component_of_wind', 'v_component_of_wind',
-        'vertical_velocity', 'specific_humidity'
-    ]
-        
-                # assuming y_true is the data object and not only the prediction tensor
-                # TODO: change format of y_true in evaluator call if needed
+            '2m_temperature', 'mean_sea_level_pressure', '10m_v_component_of_wind',
+            '10m_u_component_of_wind', 'total_precipitation_6hr', 'temperature',
+            'geopotential', 'u_component_of_wind', 'v_component_of_wind',
+            'vertical_velocity', 'specific_humidity'
+        ]
+
+        # assuming y_true is the data object and not only the prediction tensor
+        # TODO: change format of y_true in evaluator call if needed
         return masked_loss(
-                        predictions=y_pred,
-                        targets=y_true,
-                        variable_slices=None,
-                        variable_weights=get_variable_weights(grid_variables), 
-                        variable_names=grid_variables,
-                            latitude_weights=compute_latitude_weights(y_true.grid_lat),
-                            pressure_level_weights=compute_pressure_level_weights(get_default_pressure_levels()),
-                            )
-    
-    def get_mse(self):
+            predictions=y_pred,
+            targets=y_true,
+            variable_slices=None,
+            variable_weights=get_variable_weights(grid_variables),
+            variable_names=grid_variables,
+            latitude_weights=compute_latitude_weights(y_true.grid_lat),
+            pressure_level_weights=compute_pressure_level_weights(get_default_pressure_levels()),
+        )
+
+    def get_mse(self) -> Callable[[Tensor, Tensor], Tensor]:
         """Return a callable computing mean squared error (averaged per-column)."""
         return lambda y_pred, y_true: self._mse(y_pred, y_true)
 
-    def get_rmse(self):
+    def get_rmse(self) -> Callable[[Tensor, Tensor], Tensor]:
         """Return a callable computing root mean squared error (averaged per-column)."""
         return lambda y_pred, y_true: self._rmse(y_pred, y_true)
 
-    def get_mae(self):
+    def get_mae(self) -> Callable[[Tensor, Tensor], Tensor]:
         """Return a callable computing mean absolute error (averaged per-column)."""
         return lambda y_pred, y_true: self._mae(y_pred, y_true)
 
-    def get_rse(self):
+    def get_rse(self) -> Callable[[Tensor, Tensor], Tensor]:
         """Return a callable computing relative squared error (averaged per-column)."""
         return lambda y_pred, y_true: self._rse(y_pred, y_true)
 
-    def _mse(self, y_pred, y_true):
-        mse_list = []
-        for i in range(y_true.shape[1]):
+    def _mse(self, y_pred: Tensor, y_true: Tensor) -> Tensor:
+        mse_list: list[Tensor] = []
 
+        for i in range(y_true.shape[1]):
             mse_list.append(((y_true[:,i] - y_pred[:,i])**2).mean())
-        return sum(mse_list)/len(mse_list)
-    
 
-    def _rmse(self, y_pred, y_true):
+        return sum(mse_list) / len(mse_list)
 
-        rmse_list = []
+    def _rmse(self, y_pred: Tensor, y_true: Tensor) -> Tensor:
+        rmse_list: list[Tensor] = []
 
         for i in range(y_true.shape[1]):
+            rmse_list.append(torch.sqrt(((y_true[:,i] - y_pred[:,i])**2).mean()))
 
-            rmse_list.append(np.sqrt(((y_true[:,i] - y_pred[:,i])**2).mean()))
+        return sum(rmse_list) / len(rmse_list)
 
-        return sum(rmse_list)/len(rmse_list)
-    
-    def _mae(self, y_pred, y_true):
-        mae_list = []
+    def _mae(self, y_pred: Tensor, y_true: Tensor) -> Tensor:
+        mae_list: list[Tensor] = []
+
         for i in range(y_true.shape[1]):
-
             mae_list.append((torch.abs(y_true[:,i] - y_pred[:,i])).mean())
-        return sum(mae_list)/len(mae_list)
-    
-    def _rse(self, y_pred, y_true):
+
+        return sum(mae_list) / len(mae_list)
+
+    def _rse(self, y_pred: Tensor, y_true: Tensor) -> Tensor:
         """Relative squared error (RSE) averaged over columns.
 
         For each output dimension $i$:
@@ -435,7 +462,8 @@ class Evaluator():
 
         Returns NaN if the variance of `y_true[:, i]` is zero.
         """
-        rse_vals = []
+        rse_vals: list[Tensor] = []
+
         for i in range(y_true.shape[1]):
             num = torch.mean((y_true[:, i] - y_pred[:, i]) ** 2)
             denom = torch.var(y_true[:, i], unbiased=False)
@@ -445,6 +473,3 @@ class Evaluator():
                 rse_vals.append(num / denom)
 
         return sum(rse_vals) / len(rse_vals)
-
-
-    

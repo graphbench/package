@@ -338,8 +338,8 @@ class TestGraphBenchEvaluatorFull(unittest.TestCase):
             
             y_pred = [Circuit()]
             y_true = [Circuit()]
-            
-            score = ev._get_chip_design_score(y_pred, y_true)
+
+            score = ev._get_chip_design_score(y_pred, y_true).item()
             self.assertAlmostEqual(score, 100.0)
 
     def test_weather_mse(self):
