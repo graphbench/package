@@ -43,7 +43,7 @@ class ChipDesignDataset(GraphDataset):
     """
 
     def __init__(
-            self,
+        self,
         name: str,
         split: Literal["train", "val", "test"],
         root: Union[str, Path],
@@ -54,6 +54,18 @@ class ChipDesignDataset(GraphDataset):
         # TODO: This should be removed in the future -- the user will download these files
         load_preprocessed = False,
     ):
+        """
+        Args:
+            name: Dataset identifier. If loading the existing dataset, this must be ``chipdesign``.
+            split: Whether to load the train, validation, or test split of the dataset.
+            root: Root directory where the dataset folder will be created.
+            transform: Optional PyG transform applied to data objects before every access.
+            pre_transform: Optional PyG transform applied before saving data objects to disk.
+            pre_filter: A function that indicates whether a data object should be included in the final dataset.
+            cleanup_raw: If True, remove raw files after processing.
+            load_preprocessed: If True, load existing processed objects instead of regenerating.
+        """
+
         # currently downloads everything at once for a single dataset. Up to the user to manually unpack it so far
         self.SOURCES: Dict[str, SourceSpec] = {
             "chipdesign": SourceSpec(
@@ -81,24 +93,11 @@ class ChipDesignDataset(GraphDataset):
         self.processed_path = self.chipdesign_dir / self.SOURCES[self.name].raw_folder / 'processed' / f"{self.name}_{split}.pt"
         super().__init__(str(self.chipdesign_dir), transform, pre_transform, pre_filter)
 
-        """
-        Initialize the `ChipDesignDataset`.
-
-        Parameters
-        - name (str): Dataset identifier (e.g. 'chipdesign').
-        - split (str): One of 'train', 'val' or 'test'.
-        - root (str|Path): Root directory where the `chipdesign` folder will be created.
-        - transform, pre_transform: Optional PyG transforms applied at load time.
-        - cleanup_raw (bool): Whether to remove raw files after processing.
-        - load_preprocessed: Placeholder flag for future workflows.
-
-        """
         self._load_cached_or_prepare(
             processed_path=self.processed_path,
             cleanup_raw=self.cleanup_raw,
             logger=_logger,
         )
-
 
     def _prepare(self) -> None:
         """
@@ -176,9 +175,7 @@ class ChipDesignDataset(GraphDataset):
         else:
             return []
 
-
-
-    def _load_sample(self,config_data, sample_idx, num_inputs, num_outputs):
+    def _load_sample(self, config_data, sample_idx, num_inputs, num_outputs):
         """
         Convert a single sample (from the raw config dict) into a PyG Data
         object.
@@ -207,7 +204,6 @@ class ChipDesignDataset(GraphDataset):
         data.num_outputs = num_outputs
 
         return data
-
 
     def _extract_truth_vectors(self,truth_vectors, num_inputs, num_outputs):
         """
@@ -242,8 +238,4 @@ class ChipDesignDataset(GraphDataset):
 
     @property
     def processed_file_names(self) -> List[str]:
-        """
-        Return the name of the processed file for compatibility with the
-        PyG `InMemoryDataset` API.
-        """
         return [f"{self.name}_{self.split}.pt"]
