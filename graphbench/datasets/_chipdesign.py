@@ -51,8 +51,6 @@ class ChipDesignDataset(GraphDataset):
         pre_transform: Optional[Callable[[Data], Data]] = None,
         pre_filter: Optional[Callable[[Data], bool]] = None,
         cleanup_raw: bool = False,  # TODO Disabling this for now since it leads to errors on my machine
-        # TODO: This should be removed in the future -- the user will download these files
-        load_preprocessed = False,
     ):
         """
         Args:
@@ -63,7 +61,6 @@ class ChipDesignDataset(GraphDataset):
             pre_transform: Optional PyG transform applied before saving data objects to disk.
             pre_filter: A function that indicates whether a data object should be included in the final dataset.
             cleanup_raw: If True, remove raw files after processing.
-            load_preprocessed: If True, load existing processed objects instead of regenerating.
         """
 
         # currently downloads everything at once for a single dataset. Up to the user to manually unpack it so far
@@ -84,7 +81,6 @@ class ChipDesignDataset(GraphDataset):
         self.source = self.SOURCES[self.name]
         self._logger = _logger
         self.cleanup_raw = cleanup_raw
-        self.load_preprocessed = load_preprocessed
 
         # paths
         self.chipdesign_dir = Path(root) / "chipdesign"

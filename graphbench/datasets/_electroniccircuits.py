@@ -145,9 +145,7 @@ class ECDataset(GraphDataset):
         generate: Optional[bool] = False,
         cleanup_raw: bool = False,
         target_vout : Optional[float] = None,
-        vout_norm_method : Optional[str] = 'min-max',
-        # TODO: This should be removed in the future -- the user will download these files
-        load_preprocessed = False,
+        vout_norm_method : Optional[Literal["min-max", "reward", "IQR", "z-score"]] = "min-max",
     ):
         """
         Args:
@@ -161,7 +159,6 @@ class ECDataset(GraphDataset):
             cleanup_raw: If True, remove raw files after processing.
             target_vout: Optional target value for vout normalization.
             vout_norm_method: Normalization method for vout labels.
-            load_preprocessed: If True, load existing processed objects instead of regenerating.
         """
 
         #currently downloads everything at once for a single dataset. Up to the user to manually unpack it so far
@@ -207,12 +204,11 @@ class ECDataset(GraphDataset):
         self.source = self.SOURCES[self.dataset_name]
         self._logger = _logger
         self.cleanup_raw = cleanup_raw
-        self.load_preprocessed = load_preprocessed
 
         # paths
         self.ec_dir = Path(root) / "electroniccircuits"
         self._raw_dir = (self.ec_dir / self.SOURCES[self.dataset_name].raw_folder / "raw")
-        
+
         # Include time window & task in the processed filename to avoid collisions
         self.processed_path = (self.ec_dir /self.SOURCES[self.dataset_name].raw_folder / "processed" / f"{self.dataset_name}_{self.split}.pt")
         super().__init__(str(self.ec_dir), transform, pre_transform, pre_filter)
@@ -222,7 +218,6 @@ class ECDataset(GraphDataset):
             cleanup_raw=self.cleanup_raw,
             logger=_logger,
         )
-        
 
     def _generate(self, pre_transform, transform) -> None:
         raise NotImplementedError("Dataset generation not supported yet.")
@@ -249,7 +244,6 @@ class ECDataset(GraphDataset):
 
         data_all = train_json + valid_json + test_json
 
-
         targets = [datum['eff'] if self._target == 'eff' else datum['vout'] for datum in data_all]
         statistics = self.get_statistics(targets)
         y_range = self.get_y_range(
@@ -274,6 +268,7 @@ class ECDataset(GraphDataset):
             target_vout=self._target_vout,
         )
         return data_list
+
     def _make_datalist_from_json(self,
         data: List[Dict[str, Any]],
         target: str,
@@ -309,7 +304,7 @@ class ECDataset(GraphDataset):
                 terminal_ids=torch.tensor(datum['terminal_ids']),
             ))
         return data_list
-    
+
     def get_label(self, target, datum, method='min-max', target_vout=None, statistics=None, y_range=None):
         if target == 'eff':
             y_val = datum['eff']
@@ -329,11 +324,11 @@ class ECDataset(GraphDataset):
         else:
             raise Exception(f"Unimplemented target {target}")
         return y
-    
+
     def reward_norm_vout(self, vout: float, target_vout: float) -> float:
-    # Placeholder normalization — replace if needed.
+        # Placeholder normalization — replace if needed.
         return 1.0 / (1.0 + abs(vout - target_vout))
-    
+
     def get_y_range(self, target, statistics, method='min-max', target_min=-300, target_max=300):
         if target == 'eff':
             return {'min': 0., 'max': 1.}
@@ -350,7 +345,7 @@ class ECDataset(GraphDataset):
                 raise ValueError('Unknown norm method')
         else:
             raise Exception(f"Unimplemented target {target}")
-        
+
     def get_statistics(self, data: List[float]) -> Dict[str, float]:
         data = np.array(data)
         return {
@@ -389,7 +384,6 @@ class ECDataset(GraphDataset):
             return list(data.values())
         else:
             raise ValueError(f"Unsupported JSON structure in {path}: {type(data)}")
-        
 
     @property
     def raw_file_names(self) -> list[str]:
@@ -398,5 +392,3 @@ class ECDataset(GraphDataset):
     @property
     def processed_file_names(self) -> list[str]:
         return [f"{self.dataset_name}_{self.split}.pt"]
-    
-        

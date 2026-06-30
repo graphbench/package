@@ -173,13 +173,7 @@ class AlgoReasDataset(GraphDataset):
         pre_transform: Optional[Callable[[Data], Data]] = None,
         pre_filter: Optional[Callable[[Data], bool]] = None,
         generate: bool = False,
-        # TODO these are currently unused. should either be implemented or removed from the public API
-        num_nodes: Optional[int] = 16,
-        difficulty: Optional[str] = "easy",
-        follower_subgraph: bool = False,
         cleanup_raw: bool = False,
-        # TODO: This should be removed in the future -- the user will download these files
-        load_preprocessed=False,
     ):
         """
         Args:
@@ -192,11 +186,7 @@ class AlgoReasDataset(GraphDataset):
             pre_transform: Optional PyG transform applied before saving data objects to disk.
             pre_filter: A function that indicates whether a data object should be included in the final dataset.
             generate: If True, generate synthetic graphs instead of downloading.
-            num_nodes: Number of nodes (used when generating datasets).
-            difficulty: Difficulty level used for sampling configuration.
-            follower_subgraph: (Unused) placeholder for follower-subgraph extraction.
             cleanup_raw: If True, remove raw files after processing.
-            load_preprocessed: If True, load existing processed objects instead of regenerating.
         """
 
         #currently downloads everything at once for a single dataset. Up to the user to manually unpack it so far
@@ -246,7 +236,6 @@ class AlgoReasDataset(GraphDataset):
         self.source = self.SOURCES[self.dataset_name]
         self._logger = _logger
         self.cleanup_raw = cleanup_raw
-        self.load_preprocessed = load_preprocessed
 
         # paths
         self.algoreas_dir = Path(root) / "algoreas"

@@ -284,10 +284,9 @@ class BlueSkyDataset(GraphDataset):
         transform: Optional[Callable[[Data], Data]] = None,
         pre_transform: Optional[Callable[[Data], Data]] = None,
         pre_filter: Optional[Callable[[Data], bool]] = None,
-        follower_subgraph: bool = False, #not used for now 
         cleanup_raw: bool = False,
         # TODO: This should be removed in the future -- the user will download these files
-        load_preprocessed = True, #to load the preprocessed files 
+        load_preprocessed = True,
         feature_file_name: Union[str, Path] = _FEATURE_PT_PATH,
         empty_emb_file_name: Union[str, Path] = "empty.pt",
         target_file_name: Union[str, Path] = _TARGETS_PT_PATH,
@@ -301,7 +300,6 @@ class BlueSkyDataset(GraphDataset):
             transform: Optional PyG transform applied to data objects before every access.
             pre_transform: Optional PyG transform applied before saving data objects to disk.
             pre_filter: A function that indicates whether a data object should be included in the final dataset.
-            follower_subgraph: (Not implemented) If True, keep a 3-hop BFS subgraph.
             cleanup_raw: If True, remove raw files after processing.
             load_preprocessed: If True, load existing processed objects instead of regenerating.
             feature_file_name: Path to torch file containing `dict[user_id] -> list[(ts, Tensor)]`.
