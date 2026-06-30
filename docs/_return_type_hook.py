@@ -1,5 +1,3 @@
-from copy import deepcopy
-
 from docutils import nodes
 
 
@@ -67,9 +65,9 @@ def _inline_rendered_return_type_fields(app, doctree, docname):
             None,
         )
         if return_type_para is not None:
-            return_type_nodes = [deepcopy(node) for node in return_type_para.children]
+            return_type_nodes = [node.deepcopy() for node in return_type_para.children]
         else:
-            return_type_nodes = [deepcopy(node) for node in return_type_body.children]
+            return_type_nodes = [node.deepcopy() for node in return_type_body.children]
 
         if not return_type_nodes:
             # Empty Return type field: remove it and continue.

@@ -187,8 +187,6 @@ class CODataset(GraphDataset):
         generate: Optional[bool] = False,
         num_samples: Optional[int] = None,
         cleanup_raw: bool = False,
-        # TODO: This should be removed in the future -- the user will download these files
-        load_preprocessed = False,
     ):
         """
         Args:
@@ -201,7 +199,6 @@ class CODataset(GraphDataset):
             generate: If True, generate synthetic graphs instead of downloading.
             num_samples: Number of synthetic graphs to generate when generate=True.
             cleanup_raw: If True, remove raw files after processing.
-            load_preprocessed: If True, load existing processed objects instead of regenerating.
         """
         #currently downloads everything at once for a single dataset. Up to the user to manually unpack it so far
         self.SOURCES: Dict[str, SourceSpec] = {
@@ -238,10 +235,6 @@ class CODataset(GraphDataset):
             ),
         }
 
-        #self.name_temp = name.replace("_"," ")
-        #self.dataset_name = self.name_temp.lower().split(" ")[0]
-        #self.size = self.name_temp.lower().split(" ")[1]
-        #self.dataset_name = name.lower()
         self.num_samples = num_samples
         self.dataset_name = name.lower().split("_")[1] + "_" + name.lower().split("_")[2]
         if self.dataset_name not in self.SOURCES:
@@ -253,7 +246,6 @@ class CODataset(GraphDataset):
         self.source = self.SOURCES[self.dataset_name]
         self._logger = _logger
         self.cleanup_raw = cleanup_raw
-        self.load_preprocessed = load_preprocessed
 
         # paths
         self.co_dir = Path(root) / "co"

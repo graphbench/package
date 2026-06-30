@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import Callable, Dict, List, Literal, Optional, Union
+from typing import Callable, Dict, Literal, Optional, Union
 
 from torch_geometric.data import Data
 
@@ -173,13 +173,7 @@ class AlgoReasDataset(GraphDataset):
         pre_transform: Optional[Callable[[Data], Data]] = None,
         pre_filter: Optional[Callable[[Data], bool]] = None,
         generate: bool = False,
-        # TODO these are currently unused. should either be implemented or removed from the public API
-        num_nodes: Optional[int] = 16,
-        difficulty: Optional[str] = "easy",
-        follower_subgraph: bool = False,
         cleanup_raw: bool = False,
-        # TODO: This should be removed in the future -- the user will download these files
-        load_preprocessed=False,
     ):
         """
         Args:
@@ -192,11 +186,7 @@ class AlgoReasDataset(GraphDataset):
             pre_transform: Optional PyG transform applied before saving data objects to disk.
             pre_filter: A function that indicates whether a data object should be included in the final dataset.
             generate: If True, generate synthetic graphs instead of downloading.
-            num_nodes: Number of nodes (used when generating datasets).
-            difficulty: Difficulty level used for sampling configuration.
-            follower_subgraph: (Unused) placeholder for follower-subgraph extraction.
             cleanup_raw: If True, remove raw files after processing.
-            load_preprocessed: If True, load existing processed objects instead of regenerating.
         """
 
         #currently downloads everything at once for a single dataset. Up to the user to manually unpack it so far
@@ -246,7 +236,6 @@ class AlgoReasDataset(GraphDataset):
         self.source = self.SOURCES[self.dataset_name]
         self._logger = _logger
         self.cleanup_raw = cleanup_raw
-        self.load_preprocessed = load_preprocessed
 
         # paths
         self.algoreas_dir = Path(root) / "algoreas"
@@ -288,7 +277,7 @@ class AlgoReasDataset(GraphDataset):
             logger=_logger,
         )
 
-    def _load_graphs(self) -> List[Data]:
+    def _load_graphs(self) -> list[Data]:
         if self.generate:
             return self._generate()
 
@@ -298,7 +287,7 @@ class AlgoReasDataset(GraphDataset):
         # After loading into `self`, expose all elements as a list
         return [self.get(i) for i in range(len(self))]
 
-    def _load_algoreas_graphs(self) -> List[Data]:
+    def _load_algoreas_graphs(self) -> list[Data]:
         """
         Find the matching processed `.pt` file in `self._raw_dir` and load it
         into this InMemoryDataset instance using the existing `load` method.
@@ -325,9 +314,8 @@ class AlgoReasDataset(GraphDataset):
         except FileNotFoundError:
             return []
 
-
     @property
-    def raw_file_names(self) -> List[str]:  # unused, we drive our own cache
+    def raw_file_names(self) -> list[str]:  # unused, we drive our own cache
         return []
 
     @property
@@ -336,8 +324,6 @@ class AlgoReasDataset(GraphDataset):
         # is primarily for API compatibility; loading/saving is handled by the
         # class via `self.processed_path`.
         return [f"{self.dataset_name}_{self.difficulty}_{self.num_nodes}_{self.split}.pt"]
-    
-
 
 
 if __name__ == "__main__":

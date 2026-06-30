@@ -34,19 +34,14 @@ class WeatherforecastingDataset(GraphDataset):
     Handles downloading, processing, and loading splits for PyG experiments.
     """
     def __init__(
-            self,
+        self,
         name: str,
         split: Literal["train", "val", "test"],
         root: Union[str, Path],
         transform: Optional[Callable[[Data], Data]] = None,
         pre_transform: Optional[Callable[[Data], Data]] = None,
         pre_filter: Optional[Callable[[Data], bool]] = None,
-        generate: Optional[bool] = False,
         size : Optional[int] = 64,
-        # TODO: This should be removed in the future -- the user will download these files
-        load_preprocessed = False,
-        *args, 
-        **kwargs
     ):
         #currently downloads everything at once for a single dataset. Up to the user to manually unpack it so far
         self.SOURCES: Dict[str, SourceSpec] = {
@@ -59,13 +54,11 @@ class WeatherforecastingDataset(GraphDataset):
         if self.name not in self.SOURCES:
             raise ValueError(f"Unsupported dataset name: {self.name}")
         assert split in ["train", "val", "test"], "Only 'train', 'val', 'test' splits are supported."
-        self.generate = generate
         self.split = split
         self.source = self.SOURCES[self.name]
         self._logger = _logger
-        self.load_preprocessed = load_preprocessed
         self.size = size
-        
+
         self.weather_dir = Path(root) / "weatherforecasting"
         self._raw_dir = (self.weather_dir / self.SOURCES[self.name].raw_folder) / "raw"
         self.processed_path = self.weather_dir / self.SOURCES[self.name].raw_folder / "processed" / f"{self.name}.pt"
@@ -77,38 +70,10 @@ class WeatherforecastingDataset(GraphDataset):
             logger=_logger,
         )
 
-
-
-    def _generate(self) -> None:
-        #generate the corresponding weatherforecasting reasoning dataset
-        raise NotImplementedError("Dataset generation not supported yet.")
-        #fs = gcsfs.GCSFileSystem(token='anon')
-
-        #mapper = fs.get_mapper('weatherbench2/datasets/era5/1959-2023_01_10-6h-64x32_equiangular_conservative.zarr')
-
-        #data = xr.open_zarr(mapper, consolidated=False)
-
-        #single_timestep = data.isel().load()
-
-        #single_timestep.to_zarr("data/weather_64", mode="w", consolidated=True)
-
-
-        #timestamp = xr.open_zarr("data/weather_64", consolidated=False)
-
-        #print("RAM requirement:", timestamp.nbytes / 1024 / 1024, "MB")
-
-        #data = create_graph_dataset()
-        #data_list = [data[i] for i in range(len(data))]
-        #return data_list
-        
-
     def _prepare(self) -> None:
         """
         Download and unpack the weather data if it is not already cached.
         """
-
-        if self.generate:
-            return
 
         download_and_unpack(
             source=self.source,
@@ -118,15 +83,7 @@ class WeatherforecastingDataset(GraphDataset):
         )
 
     def _load_graphs(self) -> List[Data]:
-        if self.generate:
-            data_list = self._generate()
-        else:
-            data_list = self._load_weather_graphs()
-        return data_list
-
-
-
-
+        return self._load_weather_graphs()
 
     def _load_weather_graphs(self) -> List[Data]:
         """
@@ -148,17 +105,10 @@ class WeatherforecastingDataset(GraphDataset):
 
     # --- InMemoryDataset API (not used directly but kept for PyG hygiene) -----
 
-
     @property
-    def raw_file_names(self) -> List[str]:
-        """
-        Returns list of raw file names (unused)
-        """
+    def raw_file_names(self) -> list[str]:
         return []
 
     @property
-    def processed_file_names(self) -> List[str]:
-        """
-        Returns list of processed file names
-        """
+    def processed_file_names(self) -> list[str]:
         return [f"{self.name}_{self.split}.pt"]

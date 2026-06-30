@@ -43,7 +43,7 @@ class ChipDesignDataset(GraphDataset):
     """
 
     def __init__(
-            self,
+        self,
         name: str,
         split: Literal["train", "val", "test"],
         root: Union[str, Path],
@@ -51,9 +51,18 @@ class ChipDesignDataset(GraphDataset):
         pre_transform: Optional[Callable[[Data], Data]] = None,
         pre_filter: Optional[Callable[[Data], bool]] = None,
         cleanup_raw: bool = False,  # TODO Disabling this for now since it leads to errors on my machine
-        # TODO: This should be removed in the future -- the user will download these files
-        load_preprocessed = False,
     ):
+        """
+        Args:
+            name: Dataset identifier. If loading the existing dataset, this must be ``chipdesign``.
+            split: Whether to load the train, validation, or test split of the dataset.
+            root: Root directory where the dataset folder will be created.
+            transform: Optional PyG transform applied to data objects before every access.
+            pre_transform: Optional PyG transform applied before saving data objects to disk.
+            pre_filter: A function that indicates whether a data object should be included in the final dataset.
+            cleanup_raw: If True, remove raw files after processing.
+        """
+
         # currently downloads everything at once for a single dataset. Up to the user to manually unpack it so far
         self.SOURCES: Dict[str, SourceSpec] = {
             "chipdesign": SourceSpec(
@@ -72,7 +81,6 @@ class ChipDesignDataset(GraphDataset):
         self.source = self.SOURCES[self.name]
         self._logger = _logger
         self.cleanup_raw = cleanup_raw
-        self.load_preprocessed = load_preprocessed
 
         # paths
         self.chipdesign_dir = Path(root) / "chipdesign"
@@ -81,24 +89,11 @@ class ChipDesignDataset(GraphDataset):
         self.processed_path = self.chipdesign_dir / self.SOURCES[self.name].raw_folder / 'processed' / f"{self.name}_{split}.pt"
         super().__init__(str(self.chipdesign_dir), transform, pre_transform, pre_filter)
 
-        """
-        Initialize the `ChipDesignDataset`.
-
-        Parameters
-        - name (str): Dataset identifier (e.g. 'chipdesign').
-        - split (str): One of 'train', 'val' or 'test'.
-        - root (str|Path): Root directory where the `chipdesign` folder will be created.
-        - transform, pre_transform: Optional PyG transforms applied at load time.
-        - cleanup_raw (bool): Whether to remove raw files after processing.
-        - load_preprocessed: Placeholder flag for future workflows.
-
-        """
         self._load_cached_or_prepare(
             processed_path=self.processed_path,
             cleanup_raw=self.cleanup_raw,
             logger=_logger,
         )
-
 
     def _prepare(self) -> None:
         """
@@ -176,9 +171,7 @@ class ChipDesignDataset(GraphDataset):
         else:
             return []
 
-
-
-    def _load_sample(self,config_data, sample_idx, num_inputs, num_outputs):
+    def _load_sample(self, config_data, sample_idx, num_inputs, num_outputs):
         """
         Convert a single sample (from the raw config dict) into a PyG Data
         object.
@@ -208,7 +201,6 @@ class ChipDesignDataset(GraphDataset):
 
         return data
 
-
     def _extract_truth_vectors(self,truth_vectors, num_inputs, num_outputs):
         """
         Fast truth vector extraction with numpy operations.
@@ -237,13 +229,9 @@ class ChipDesignDataset(GraphDataset):
         return result
    
     @property
-    def raw_file_names(self) -> List[str]: 
+    def raw_file_names(self) -> list[str]:
         return []
 
     @property
-    def processed_file_names(self) -> List[str]:
-        """
-        Return the name of the processed file for compatibility with the
-        PyG `InMemoryDataset` API.
-        """
+    def processed_file_names(self) -> list[str]:
         return [f"{self.name}_{self.split}.pt"]
