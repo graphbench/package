@@ -238,15 +238,15 @@ class ECDataset(GraphDataset):
         if self.generate:
             return self._generate(None, None)
 
-        train_json = self.load_json(os.path.join(self._raw_dir, f"dataset_{self.component_size}_train.json"))
-        valid_json = self.load_json(os.path.join(self._raw_dir, f"dataset_{self.component_size}_valid.json"))
-        test_json = self.load_json(os.path.join(self._raw_dir, f"dataset_{self.component_size}_test.json"))
+        train_json = self._load_json(os.path.join(self._raw_dir, f"dataset_{self.component_size}_train.json"))
+        valid_json = self._load_json(os.path.join(self._raw_dir, f"dataset_{self.component_size}_valid.json"))
+        test_json = self._load_json(os.path.join(self._raw_dir, f"dataset_{self.component_size}_test.json"))
 
         data_all = train_json + valid_json + test_json
 
         targets = [datum['eff'] if self._target == 'eff' else datum['vout'] for datum in data_all]
-        statistics = self.get_statistics(targets)
-        y_range = self.get_y_range(
+        statistics = self._get_statistics(targets)
+        y_range = self._get_y_range(
             target=self._target,
             statistics=statistics,
             method=self._vout_norm_method,
@@ -284,7 +284,7 @@ class ECDataset(GraphDataset):
             edge_features = None
 
             duty = torch.tensor(datum['duty'])
-            y = self.get_label(
+            y = self._get_label(
                 target=target,
                 datum=datum,
                 method=vout_norm_method,
@@ -305,7 +305,7 @@ class ECDataset(GraphDataset):
             ))
         return data_list
 
-    def get_label(self, target, datum, method='min-max', target_vout=None, statistics=None, y_range=None):
+    def _get_label(self, target, datum, method='min-max', target_vout=None, statistics=None, y_range=None):
         if target == 'eff':
             y_val = datum['eff']
             y = torch.clamp(torch.tensor(y_val), y_range['min'], y_range['max'])
@@ -313,7 +313,7 @@ class ECDataset(GraphDataset):
             if method == 'min-max':
                 vout = (datum['vout'] + 300.) / 600.
             elif method == 'reward':
-                vout = self.reward_norm_vout(vout=datum['vout'], target_vout=target_vout)
+                vout = self._reward_norm_vout(vout=datum['vout'], target_vout=target_vout)
             elif method == 'IQR':
                 vout = (datum['vout'] - statistics['q25']) / statistics['iqr']
             elif method == 'z-score':
@@ -325,11 +325,11 @@ class ECDataset(GraphDataset):
             raise Exception(f"Unimplemented target {target}")
         return y
 
-    def reward_norm_vout(self, vout: float, target_vout: float) -> float:
+    def _reward_norm_vout(self, vout: float, target_vout: float) -> float:
         # Placeholder normalization — replace if needed.
         return 1.0 / (1.0 + abs(vout - target_vout))
 
-    def get_y_range(self, target, statistics, method='min-max', target_min=-300, target_max=300):
+    def _get_y_range(self, target, statistics, method='min-max', target_min=-300, target_max=300):
         if target == 'eff':
             return {'min': 0., 'max': 1.}
         elif target == 'vout':
@@ -346,7 +346,7 @@ class ECDataset(GraphDataset):
         else:
             raise Exception(f"Unimplemented target {target}")
 
-    def get_statistics(self, data: List[float]) -> Dict[str, float]:
+    def _get_statistics(self, data: List[float]) -> Dict[str, float]:
         data = np.array(data)
         return {
             'mean': float(np.mean(data)),
@@ -372,7 +372,7 @@ class ECDataset(GraphDataset):
                 for fname in os.listdir(directory)
                 if fname == pattern]
 
-    def load_json(self, name: str) -> list:
+    def _load_json(self, name: str) -> list:
         """Load a JSON file and ensure it's returned as a list of dictionaries."""
         path = name
         with open(path, "r") as f:
