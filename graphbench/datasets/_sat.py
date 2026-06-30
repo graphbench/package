@@ -53,7 +53,9 @@ class SATDataset(GraphDataset):
 
         
     Overview:
-            We include tasks for two problem settings:
+            The goal in this subdomain is not to directly solve SAT instances, as efficient solvers for this problem already exist.
+            However, a key property of modern SAT solvers is performance complementarity: no single solver dominates across all instances.
+            For this reason, we concentrate on two problem settings:
 
             - **Performance Prediction (EPM)**: a regression problem whose goal is to predict the computation time of SAT solvers on unseen instances.
             - **Algorithm Selection (AS)**: a multi-class classification problem that aims to select the best performing algorithm for a given SAT instance. 
@@ -61,9 +63,9 @@ class SATDataset(GraphDataset):
             The SAT datasets include formulae from diverse real-world applications and synthetically generated instances.
             Each instance is represented through 3 graph representations, capturing structural views of SAT formulae:
 
-            - **Variable-Clause Graph (VCG)**: a bipartite, undirected graph with a node for each variable :math:`v`  and each clause :math:`c`, where an edge connects a variable to a clause if and only if the variable appears in that clause.
-            - **Clause Graph (LCG)**: an undirected graph with one node per clause, where two clauses :math:`c_i` and :math:`c_j` are connected if they share at least one negated literal.
-            - **Variable Graph (VG)**: an undirected graph with one node per variable, where two variables :math:`v_i` and :math:`v_j` are connected if they co-occur in at least one clause.
+            - **Variable-Clause Graph (VCG)**: a bipartite, undirected graph with a node for each variable and each clause, where an edge connects a variable to a clause if and only if the variable appears in that clause.
+            - **Clause Graph (LCG)**: an undirected graph with one node per clause, where two clauses are connected if they share at least one negated literal.
+            - **Variable Graph (VG)**: an undirected graph with one node per variable, where two variables are connected if they co-occur in at least one clause.
 
             We provide the same dataset on 3 scales:
             
