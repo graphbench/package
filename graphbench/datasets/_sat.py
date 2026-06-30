@@ -573,7 +573,6 @@ class SATDataset(GraphDataset):
             feat_tensor = torch.tensor(features, dtype=torch.bfloat16)
 
         if self.task_type == "epm":
-            print(times)
             y = times[times["solver_name"] == self.solver]["time"].values[0]
 
             if y < 0.05:
