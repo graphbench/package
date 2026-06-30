@@ -57,26 +57,26 @@ class SATDataset(GraphDataset):
             
             We include tasks for two problem settings:
 
-            - **Performance Prediction**: a regression problem whose goal is to predict the computation time of SAT solvers on unseen instances.
-            - **Algorithm Selection**: a multi-class classification problem that aims to select the best performing algorithm for a given SAT instance. 
+            - **Performance Prediction (EPM)**: a regression problem whose goal is to predict the computation time of SAT solvers on unseen instances.
+            - **Algorithm Selection (AS)**: a multi-class classification problem that aims to select the best performing algorithm for a given SAT instance. 
 
-            Each instance is represented through 3 features, capturing structural views of SAT formulae:
+            Each instance is represented through 3 graph representations, capturing structural views of SAT formulae:
 
             - **Variable-Clause Graph (VCG)**: a bipartite, undirected graph with a node for each variable :math:`v`  and each clause :math:`c`, where an edge connects a variable to a clause if and only if the variable appears in that clause.
             - **Clause Graph (LCG)**: an undirected graph with one node per clause, where two clauses :math:`c_i` and :math:`c_j` are connected if they share at least one negated literal.
             - **Variable Graph (VG)**: an undirected graph with one node per variable, where two variables :math:`v_i` and :math:`v_j` are connected if they co-occur in at least one clause.
 
-            The dataset covers 3 scales:
+            We provide the same dataset on 3 scales:
             
-            - Small: up to 3,000 variables and 15,000 clause
-            - Medium: up to 20,000 variables and 80,000 clause
+            - Small: contains only the formulae with up to 3,000 variables and 15,000 clauses.
+            - Medium: contains all formulae with up to 20,000 variables and 80,000 clauses.
             - Large: includes all formulae 
 
-            In total, the dataset comprises over 100K problem instances (spanning from a few thousand to over 25M variables and 1.8B clauses). This results in 208,788 graphs ranging from 2 to 20,799 nodes and 2 to 4,109,936 edges, with an overall size of approximately 16GB.
+            In total, the dataset comprises over 100K problem instances (spanning from a few thousand to over 25M variables and 1.8B clauses). This results in 208,788 graphs ranging from 2 to 20,799 nodes and 2 to 4,109,936 edges.
 
             Please refer to the `GraphBench paper <https://arxiv.org/abs/2512.04475>`__ for the exact parameters used for formula generation, dataset selection, and solver configurations.
     Splits:
-        The SAT solving datasets use a fixed 80% / 10% / 10% split for training, validation, and testing across the SMALL, MEDIUM, and LARGE dataset sizes.
+        The SAT solving datasets use a fixed 80% / 10% / 10% split for training, validation, and testing.
 
     Graph Attributes:
         Each graph has the following attributes:
@@ -91,8 +91,12 @@ class SATDataset(GraphDataset):
              - ``[num_nodes, 12]``
              - Node features for the SAT graph.
            * - ``y``
-             - ``[1, 11]``
-             - Target vector over 11 solvers.
+             - **EPM**: ``[1]`` 
+
+               **AS**: ``[1, 11]``
+             - **EPM**: Runtime of the selected solver. 
+
+               **AS**: Target vector over 11 solvers.
 
     List of Available Datasets:
         We provide one dataset for each combination of graph encoding and task target.
@@ -122,7 +126,6 @@ class SATDataset(GraphDataset):
         In addition to this, we provide ``sat`` as a convenience identifier to load all of the above datasets.
 
     Usage Notes:
-        The dataset class automatically handles the downloading of supplementary CSV files containing labels and SATZILLA features. 
         Currently, the loader defaults to using only small formula sizes.
 """
 
@@ -143,7 +146,7 @@ class SATDataset(GraphDataset):
         load_preprocessed = False,):
         """
         Args:
-            name: Dataset identifier in the form ``electronic_circuits_{component_size}_{target}``, e.g. ``electronic_circuits_7_eff``.
+            name: Dataset identifier in the form ``sat_{graph_encoding}_{target}``, e.g. ``sat_lcg_as``.
             split: Whether to load the train, validation, or test split of the dataset.
             root: Root directory where the dataset folder will be created.
             transform: Optional PyG transform applied to data objects before every access.
@@ -570,6 +573,7 @@ class SATDataset(GraphDataset):
             feat_tensor = torch.tensor(features, dtype=torch.bfloat16)
 
         if self.task_type == "epm":
+            print(times)
             y = times[times["solver_name"] == self.solver]["time"].values[0]
 
             if y < 0.05:
@@ -669,7 +673,7 @@ class SATDataset(GraphDataset):
         Returns a list of filenames matching the convention in the directory.
         """
 
-        pattern = f"data_{size}_{graph_type}_no_trans.pt"
+        pattern = f"data_{size}_{graph_type}.pt"
         return [os.path.join(directory, fname)
                 for fname in os.listdir(directory)
                 if fname == pattern]
