@@ -53,13 +53,12 @@ class SATDataset(GraphDataset):
 
         
     Overview:
-            The SAT datasets include formulae from diverse real-world applications and synthetically generated instances.
-            
             We include tasks for two problem settings:
 
             - **Performance Prediction (EPM)**: a regression problem whose goal is to predict the computation time of SAT solvers on unseen instances.
             - **Algorithm Selection (AS)**: a multi-class classification problem that aims to select the best performing algorithm for a given SAT instance. 
 
+            The SAT datasets include formulae from diverse real-world applications and synthetically generated instances.
             Each instance is represented through 3 graph representations, capturing structural views of SAT formulae:
 
             - **Variable-Clause Graph (VCG)**: a bipartite, undirected graph with a node for each variable :math:`v`  and each clause :math:`c`, where an edge connects a variable to a clause if and only if the variable appears in that clause.
