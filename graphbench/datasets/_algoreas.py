@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import Callable, Dict, List, Literal, Optional, Union
+from typing import Callable, Dict, Literal, Optional, Union
 
 from torch_geometric.data import Data
 
@@ -277,7 +277,7 @@ class AlgoReasDataset(GraphDataset):
             logger=_logger,
         )
 
-    def _load_graphs(self) -> List[Data]:
+    def _load_graphs(self) -> list[Data]:
         if self.generate:
             return self._generate()
 
@@ -287,7 +287,7 @@ class AlgoReasDataset(GraphDataset):
         # After loading into `self`, expose all elements as a list
         return [self.get(i) for i in range(len(self))]
 
-    def _load_algoreas_graphs(self) -> List[Data]:
+    def _load_algoreas_graphs(self) -> list[Data]:
         """
         Find the matching processed `.pt` file in `self._raw_dir` and load it
         into this InMemoryDataset instance using the existing `load` method.
@@ -314,9 +314,8 @@ class AlgoReasDataset(GraphDataset):
         except FileNotFoundError:
             return []
 
-
     @property
-    def raw_file_names(self) -> List[str]:  # unused, we drive our own cache
+    def raw_file_names(self) -> list[str]:  # unused, we drive our own cache
         return []
 
     @property
@@ -325,8 +324,6 @@ class AlgoReasDataset(GraphDataset):
         # is primarily for API compatibility; loading/saving is handled by the
         # class via `self.processed_path`.
         return [f"{self.dataset_name}_{self.difficulty}_{self.num_nodes}_{self.split}.pt"]
-    
-
 
 
 if __name__ == "__main__":

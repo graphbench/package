@@ -229,9 +229,9 @@ class ChipDesignDataset(GraphDataset):
         return result
    
     @property
-    def raw_file_names(self) -> List[str]: 
+    def raw_file_names(self) -> list[str]:
         return []
 
     @property
-    def processed_file_names(self) -> List[str]:
+    def processed_file_names(self) -> list[str]:
         return [f"{self.name}_{self.split}.pt"]

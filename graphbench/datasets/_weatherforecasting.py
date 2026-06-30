@@ -41,7 +41,7 @@ class WeatherforecastingDataset(GraphDataset):
         transform: Optional[Callable[[Data], Data]] = None,
         pre_transform: Optional[Callable[[Data], Data]] = None,
         pre_filter: Optional[Callable[[Data], bool]] = None,
-        generate: Optional[bool] = False,
+        generate: bool = False,
         size : Optional[int] = 64,
     ):
         #currently downloads everything at once for a single dataset. Up to the user to manually unpack it so far
@@ -137,9 +137,9 @@ class WeatherforecastingDataset(GraphDataset):
     # --- InMemoryDataset API (not used directly but kept for PyG hygiene) -----
 
     @property
-    def raw_file_names(self) -> List[str]:
+    def raw_file_names(self) -> list[str]:
         return []
 
     @property
-    def processed_file_names(self) -> List[str]:
+    def processed_file_names(self) -> list[str]:
         return [f"{self.name}_{self.split}.pt"]

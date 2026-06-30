@@ -441,11 +441,11 @@ class BlueSkyDataset(GraphDataset):
     # --- InMemoryDataset API (not used directly but kept for PyG hygiene) -----
 
     @property
-    def raw_file_names(self) -> List[str]:  # unused, we drive our own cache
+    def raw_file_names(self) -> list[str]:  # unused, we drive our own cache
         return []
 
     @property
-    def processed_file_names(self) -> List[str]:  # unused, we drive our own cache
+    def processed_file_names(self) -> list[str]:  # unused, we drive our own cache
         return []
 
     # -------------------------------------------------------------------------#
