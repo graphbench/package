@@ -29,10 +29,50 @@ _logger = get_logger(__name__)
 
 
 class WeatherforecastingDataset(GraphDataset):
+    r"""
+    Weather forecasting dataset.
+
+    Note:
+        This class **should not be used directly**, please use :class:`graphbench.Loader` instead to access the provided
+        datasets.
+        The purpose of this page is merely to provide details on the dataset.
+
+
+    Overview:
+        We provide a graph-based medium-range weather forecasting dataset derived from the
+        `ERA5 <https://cds.climate.copernicus.eu/datasets/reanalysis-era5-single-levels>`_ reanalysis dataset.
+        We use a down-sampled version of ERA5 with a ``64 x 32`` equiangular grid and a temporal resolution of six
+        hours.
+
+        The dataset combines two structures into a single graph:
+
+        - A **grid graph** of ``2,048`` nodes, where each node corresponds to one grid cell and stores the atmospheric
+          state at that location.
+        - An **icosahedron mesh graph** of ``2,562`` nodes spanning the globe, on which message passing is performed.
+
+        Each grid node is connected by a directed edge to one of the icosahedron mesh nodes; together this yields a
+        single graph with ``4,610`` nodes and ``59,667`` edges.
+        Each grid node carries 5 surface variables and 6 atmospheric variables defined across 13 pressure levels
+        (50 hPa to 1,000 hPa), for a total of ``83`` input channels per grid node.
+
+        The task is to model medium-range weather evolution by predicting the *residual* change in the atmospheric
+        state over a fixed 12-hour horizon.
+        Following `GraphCast <https://www.science.org/doi/10.1126/science.adi2336>`__, the model ingests the current
+        atmospheric state, maps it to the icosahedron mesh, performs several rounds of message passing, and maps the
+        result back to the grid; the predicted residual is added to the input to obtain the 12-hour-ahead state.
+
+
+    List of Available Datasets:
+        We currently provide a single dataset, called ``weather``.
+
+        It can be loaded like this:
+
+        .. code:: python
+
+            from graphbench import Loader
+            dataset = Loader("data", "weather").load()
     """
-    Benchmark dataset class for weather forecasting graph data.
-    Handles downloading, processing, and loading splits for PyG experiments.
-    """
+
     def __init__(
         self,
         name: str,
@@ -43,6 +83,17 @@ class WeatherforecastingDataset(GraphDataset):
         pre_filter: Optional[Callable[[Data], bool]] = None,
         size : Optional[int] = 64,
     ):
+        """
+        Args:
+            name: Dataset identifier. Must be ``weather_64`` in order to load the provided dataset.
+                  Note that this differs from the name provided to :class:`graphbench.Loader`.
+            split: Whether to load the train, validation, or test split of the dataset.
+            root: Root directory where the dataset folder will be created.
+            transform: Optional PyG transform applied to data objects before every access.
+            pre_transform: Optional PyG transform applied before saving data objects to disk.
+            pre_filter: A function that indicates whether a data object should be included in the final dataset.
+            size: The grid size of the dataset. Currently, only ``64`` is supported for loading the provided dataset.
+        """
         #currently downloads everything at once for a single dataset. Up to the user to manually unpack it so far
         self.SOURCES: Dict[str, SourceSpec] = {
             "weather_64": SourceSpec(

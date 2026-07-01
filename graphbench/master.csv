@@ -11,6 +11,3 @@ weather,regression,"Weather_MSE"
 chipdesign,generation,"ChipDesignScore"
 electroniccircuit,regression,"RSE"
 bluesky,regression,"spearman_r_0;spearman_r_1;spearman_r_2;r2_0;r2_1;r2_2;MAE"
-
-
-
