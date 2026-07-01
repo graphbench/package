@@ -24,7 +24,7 @@ from _return_type_hook import _inline_rendered_return_type_fields  # noqa: E402
 project = "GraphBench"
 author = "Timo Stoll, Chendi Qian, Ben Finkelshtein, Ali Parviz, Darius Weber, Fabrizio Frasca, Hadar Shavit, Antoine Siraudin, Arman Mielke, Marie Anastacio, Erik Müller, Maya Bechler-Speicher, Michael Bronstein, Mikhail Galkin, Holger Hoos, Mathias Niepert, Bryan Perozzi, Jan Tönshoff, Christopher Morris"
 copyright = "2026, " + author
-version = "0.1.2.4"
+version = "0.1.3"
 
 
 
