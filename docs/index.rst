@@ -56,4 +56,4 @@ Further Information
    :maxdepth: 3
    :caption: Contents
 
-   _api/graphbench.rst
+   api/index

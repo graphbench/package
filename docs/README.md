@@ -17,8 +17,18 @@ pip install -U sphinx==9.1.0
 Make sure the current working directory is `docs/`.
 Then run:
 
-1. `rm -r _api _build`
-2. `sphinx-apidoc --output-dir _api .. --separate --no-toc`
-3. `make html` (Linux) or `make.bat html` (Windows)
+1. `rm -r _build` (Linux/macOS) or `rmdir /s /q _build` (Windows)
+2. `make html` (Linux) or `make.bat html` (Windows)
 
 The output appears in `_build/html`
+
+
+## Maintaining API Reference Pages
+
+API reference `.rst` files in `api/` are committed and curated manually.
+
+When the public API changes (new class/module, rename, removal), update these files in the same PR:
+
+1. Add/remove the corresponding `api/*.rst` page.
+2. Update `api/index.rst` and the relevant group toctree (`core.rst`, `datasets.rst`, or `graphbench.helpers.rst`).
+3. Run `make html` or `make.bat html` to validate the navigation and links.

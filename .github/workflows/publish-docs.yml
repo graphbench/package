@@ -24,12 +24,7 @@ jobs:
         with:
           python-version: 3.12
       - name: Install dependencies
-        # we're installing sphinx here (even though sphinx-notes/pages will also install it) so we can run sphinx-apidoc
-        run: |
-          pip install git+https://github.com/pyg-team/pyg_sphinx_theme.git
-          pip install -U sphinx==9.1.0
-      - name: Run sphinx-apidoc
-        run: cd docs && sphinx-apidoc --output-dir _api .. --separate --no-toc
+        run: pip install git+https://github.com/pyg-team/pyg_sphinx_theme.git
       - name: Build and deploy to GitHub Pages
         id: deployment
         uses: sphinx-notes/pages@v3

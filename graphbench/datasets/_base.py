@@ -5,7 +5,7 @@ from torch_geometric.data import Data, InMemoryDataset
 
 
 class GraphDataset(InMemoryDataset, ABC):
-    """Shared lifecycle utilities for GraphBench datasets."""
+    """Base class for all GraphBench dataset classes."""
 
     @staticmethod
     def _cleanup_path(raw_path, logger=None):
