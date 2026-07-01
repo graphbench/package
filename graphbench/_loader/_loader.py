@@ -248,7 +248,6 @@ class Loader():
             pre_transform=self.pre_transform,
             transform=self.transform,
             split=split,
-            generate=self.generate,
             solver=self.sat_solver,
             use_satzilla_features=self.use_satzilla_features,
         )
@@ -268,7 +267,6 @@ class Loader():
             pre_transform=self.pre_transform,
             transform=self.transform,
             split=split,
-            generate=self.generate,
         )
 
 
