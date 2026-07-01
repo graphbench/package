@@ -34,21 +34,81 @@ _Metric: TypeAlias = Union[
 
 
 class Evaluator():
-    """Select and compute metrics for specified benchmark tasks.
+    """
+    Select and compute metrics for specified benchmark tasks.
 
-    Utility class to evaluate model outputs for tasks supported by
-    GraphBench. The `Evaluator` class centralizes selection of metrics and
-    computes task-specific scores such as classification accuracy, F1,
-    regression metrics, and specialized scores used by
-    benchmarks (e.g., ClosedGap, ChipDesignScore, Weather_MSE).
+    A utility class to evaluate model outputs for tasks supported by GraphBench.
+    This class centralizes selection of metrics and computes task-specific scores such as classification accuracy, F1,
+    regression metrics, and specialized scores used by benchmarks (e.g., ClosedGap, ChipDesignScore, Weather_MSE).
 
-    Args:
-        name: The named benchmark. The implementation reads
-              `master.csv` in the module directory and expects a row for
-              `name` containing `task` and `metric` columns.
+    The evaluator object is initialized with the name of a benchmark task, which determines the metrics to be used:
+
+    .. list-table::
+        :header-rows: 1
+
+        * - Subdomain
+          - Task name
+          - Task type
+          - Metric(s)
+        * - Algorithmic reasoning
+          - ``algoreas_regression``
+          - Regression
+          - MSE, MAE
+        * - Algorithmic reasoning
+          - ``algoreas_classification``
+          - Classification
+          - Accuracy, F1 score
+        * - SAT solving
+          - ``sat_epm``
+          - Regression
+          - RMSE
+        * - SAT solving
+          - ``sat_as``
+          - Regression
+          - Closed Gap
+        * - Combinatorial optimization
+          - ``co_regression``
+          - Regression
+          - MAE, MSE
+        * - Combinatorial optimization
+          - ``co_unsupervised_mis``
+          - Unsupervised
+          - MIS size
+        * - Combinatorial optimization
+          - ``co_unsupervised_maxcut``
+          - Unsupervised
+          - Max cut size
+        * - Combinatorial optimization
+          - ``co_unsupervised_coloring``
+          - Unsupervised
+          - Number of colors used
+        * - Weather forecasting
+          - ``weather``
+          - Regression
+          - MSE
+        * - Chip design
+          - ``chipdesign``
+          - Graph generation
+          - Ad-hoc score, see :meth:`get_chip_design_score`
+        * - Electronic circuits
+          - ``electroniccircuit``
+          - Regression
+          - RSE
+        * - Social networks
+          - ``bluesky``
+          - Regression
+          - MAE, :math:`R^2`, Spearman correlation
+
+    After the evaluator is initialized, the :meth:`evaluate` method can be used to evaluate model outputs.
+    Alternatively, individual metric factories can be accessed via the ``get_<metric>`` methods, which return callables
+    that compute the specified metric.
     """
 
     def __init__(self, name: str):
+        """
+        Args:
+            name: The task name. Determines which evaluation metrics are used.
+        """
         self.csv_info = get_master_df()
 
         self.task = self.csv_info.loc[name]['task']
@@ -143,9 +203,10 @@ class Evaluator():
         In case of specialized metrics that require batch information (e.g., unsupervised tasks), the `batch` argument should be provided instead of y_true.
         Returns a single scalar value if one metric is selected, or a list of scalar values if multiple metrics are selected.
 
-        :param y_pred: predicted values as a torch tensor or numpy array of shape (N,K)
-        :param y_true: true values as a torch tensor or numpy array of shape (N,K) or (N,1), defaults to None 
-        :param batch: optional batch information for unsupervised tasks, defaults to None
+        Args:
+            y_pred: Predicted values as a torch tensor or numpy array of shape (N,K)
+            y_true: True values as a torch tensor or numpy array of shape (N,K) or (N,1), defaults to None
+            batch: Optional batch information for unsupervised tasks, defaults to None
         """
         metric = self._get_metric()
         if batch is not None:
@@ -161,31 +222,45 @@ class Evaluator():
         return metric(y_pred, y_true).item()
 
     def get_f1(self) -> Callable[[Tensor, Tensor], Tensor]:
-        """Return a callable computing binary F1.
-
+        """
         Returns:
-            Callable[[Tensor, Tensor], Tensor]: Metric callable taking
-            `(y_pred, y_true)`.
+            A callable that takes ``y_pred, y_true`` and computes the binary F1 score.
         """
         f1 = torchmetrics.F1Score(task="binary")
         return lambda x, y: f1(x, y)
 
     def get_acc(self) -> Callable[[Tensor, Tensor], Tensor]:
-        """Return a callable computing binary accuracy."""
+        """
+        Returns:
+            A callable that takes ``y_pred, y_true`` and computes the binary accuracy.
+        """
         acc = torchmetrics.Accuracy(task="binary")
         return lambda x, y: acc(x, y)
 
     def get_spearman(self, index: int) -> Callable[[Tensor, Tensor], Tensor]:
-        """Return a spearman correlation callable for the given output index."""
+        """
+        Args:
+            index: The output index for which to compute the Spearman correlation coefficient.
+
+        Returns:
+            A callable that computes the Spearman correlation coefficient for the specified output index.
+        """
         spearman = torchmetrics.SpearmanCorrCoef()
         return lambda x, y: spearman(x[:,index], y[:,index])
 
     def get_r2(self, index: int) -> Callable[[Tensor, Tensor], Tensor]:
-        """Return an R2 score callable for the given output index."""
+        """
+        Args:
+            index: The output index for which to compute the :math:`R^2` score.
+
+        Returns:
+            A callable that computes the :math:`R^2` score for the specified output index.
+        """
         r2 = torchmetrics.R2Score()
         return lambda x, y: r2(x[:,index], y[:,index])
 
     def get_closed_gap(self) -> Callable[[Tensor, Tensor], Tensor]:
+        # TODO
         """Return a callable computing ClosedGap.
 
         Note: This metric expects `y_true` shaped (N, K) of runtimes or
@@ -195,36 +270,58 @@ class Evaluator():
         return lambda y_pred, y_true: self._get_closed_gap(y_pred, y_true)
 
     def get_chip_design_score(self) -> Callable[[list[Data], list[Data]], Tensor]:
-        """Return a callable computing ChipDesignScore."""
+        """
+        Returns:
+            A callable that takes a predicted and a reference chip design and computes a score between 0 and 100 that
+            reflects how few internal gates are used compared to the reference design.
+            A higher score indicates a smaller number of internal gates, i.e. a more efficient design.
+            A design that does not implement the same function as the reference design will receive a score of 0.
+
+            Please refer to the `GraphBench paper <https://arxiv.org/abs/2512.04475>`_ for details.
+        """
         return lambda y_pred, y_true: self._get_chip_design_score(y_pred, y_true)
 
     def get_weather_mse(self) -> Callable[[Tensor, Tensor], Tensor]:
-        """Return a callable computing Weather_MSE."""
+        """
+        Returns:
+            A callable that takes ``y_pred, y_true`` and computes the mean squared error (MSE) for weather
+            forecasting data.
+        """
         return lambda y_pred, y_true: self._get_weather_mse(y_pred, y_true)
 
     def get_mis_size(self) -> Callable[[Tensor, Batch], Tensor]:
-        """Return a callable computing MisSize.
-
-        Note: This callable expects `(x, batch)` rather than the standard
-        `(y_pred, y_true)` signature.
+        """
+        Returns:
+            A callable that takes predicted node scores of size ``[num_nodes_in_batch]`` and a batch of graphs.
+            It decodes the scores into discrete solutions for the maximum independent set (MIS) problem and computes
+            the size of the resulting independent set for each graph in the batch, then returns the average size.
+            This is equivalent to using :func:`~graphbench.helpers.combinatorial_optimization.mis_decoder` followed by
+            :func:`~graphbench.helpers.combinatorial_optimization.mis_size`.
         """
         return lambda x, batch, dec_length=300, num_seeds=1: mis_size(
             mis_decoder(x, batch, dec_length=dec_length, num_seeds=num_seeds)
         )
 
     def get_max_cut_size(self) -> Callable[[Tensor, Batch], Tensor]:
-        """Return a callable computing MaxCutSize.
-
-        Note: This callable expects `(x, batch)` rather than the standard
-        `(y_pred, y_true)` signature.
+        """
+        Returns:
+            A callable that takes predicted node scores of size ``[num_nodes_in_batch]`` and a batch of graphs.
+            It decodes the scores into a discrete partitioning of the nodes for maximum cut and computes the size of
+            the resulting cut for each graph in the batch, then returns the average size.
+            This is equivalent to using :func:`~graphbench.helpers.combinatorial_optimization.max_cut_decoder` followed
+            by :func:`~graphbench.helpers.combinatorial_optimization.max_cut_size`.
         """
         return lambda x, batch: max_cut_size(max_cut_decoder(x, batch), batch)
 
     def get_num_colors_used(self) -> Callable[[Tensor, Batch], Tensor]:
-        """Return a callable computing NumColorsUsed.
-
-        Note: This callable expects `(x, batch)` rather than the standard
-        `(y_pred, y_true)` signature.
+        """
+        Returns:
+            A callable that takes predicted node scores of size ``[num_nodes_in_batch, max_num_colors]`` and a batch of
+            graphs.
+            It decodes the scores into a discrete graph coloring and computes the number of colors used for each graph
+            in the batch, then returns the average.
+            This is equivalent to using :func:`~graphbench.helpers.combinatorial_optimization.graph_coloring_decoder`
+            followed by :func:`~graphbench.helpers.combinatorial_optimization.num_colors_used`.
         """
         return lambda x, batch, num_seeds=1: num_colors_used(graph_coloring_decoder(x, batch, num_seeds=num_seeds))
 
@@ -352,15 +449,14 @@ class Evaluator():
     def _extract_input_output_counts(self, x: Tensor):
         """Extract the number of input and output nodes from `x`.
 
-        The method assumes `x` has three columns encoding node types
-        as a one-hot vector: [AND, INPUT, OUTPUT]. It counts rows
-        matching the `INPUT` and `OUTPUT` patterns.
+        The method assumes `x` has three columns encoding node types as a one-hot vector: [AND, INPUT, OUTPUT].
+        It counts rows matching the `INPUT` and `OUTPUT` patterns.
 
         Args:
-            x (Tensor): Node feature tensor of shape `(num_nodes, 3)`.
+            x: Node feature tensor of shape `(num_nodes, 3)`.
 
         Returns:
-            tuple: (num_inputs, num_outputs)
+            tuple (num_inputs, num_outputs)
         """
         if x.shape[1] != 3:
             raise ValueError(f"Expected node features with 3 columns [AND, INPUT, OUTPUT], got {x.shape[1]}")
@@ -415,19 +511,32 @@ class Evaluator():
         )
 
     def get_mse(self) -> Callable[[Tensor, Tensor], Tensor]:
-        """Return a callable computing mean squared error (averaged per-column)."""
+        """
+        Returns:
+            A callable that takes ``y_pred, y_true`` and computes the mean squared error (MSE), averaged per column.
+        """
         return lambda y_pred, y_true: self._mse(y_pred, y_true)
 
     def get_rmse(self) -> Callable[[Tensor, Tensor], Tensor]:
-        """Return a callable computing root mean squared error (averaged per-column)."""
+        """
+        Returns:
+            A callable that takes ``y_pred, y_true`` and computes the root mean squared error (RMSE), averaged per
+            column.
+        """
         return lambda y_pred, y_true: self._rmse(y_pred, y_true)
 
     def get_mae(self) -> Callable[[Tensor, Tensor], Tensor]:
-        """Return a callable computing mean absolute error (averaged per-column)."""
+        """
+        Returns:
+            A callable that takes ``y_pred, y_true`` and computes the mean absolute error (MAE), averaged per column.
+        """
         return lambda y_pred, y_true: self._mae(y_pred, y_true)
 
     def get_rse(self) -> Callable[[Tensor, Tensor], Tensor]:
-        """Return a callable computing relative squared error (averaged per-column)."""
+        """
+        Returns:
+            A callable that takes ``y_pred, y_true`` and computes the relative squared error (RSE), averaged per column.
+        """
         return lambda y_pred, y_true: self._rse(y_pred, y_true)
 
     def _mse(self, y_pred: Tensor, y_true: Tensor) -> Tensor:
@@ -455,7 +564,7 @@ class Evaluator():
         return sum(mae_list) / len(mae_list)
 
     def _rse(self, y_pred: Tensor, y_true: Tensor) -> Tensor:
-        """Relative squared error (RSE) averaged over columns.
+        r"""Relative squared error (RSE) averaged over columns.
 
         For each output dimension $i$:
             $$\mathrm{RSE}_i = \frac{\mathbb{E}[(y_i-\hat{y}_i)^2]}{\mathbb{E}[(y_i-\mathbb{E}[y_i])^2]}$$
