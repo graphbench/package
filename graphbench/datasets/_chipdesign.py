@@ -24,22 +24,76 @@ _logger = get_logger(__name__)
 
 class ChipDesignDataset(GraphDataset):
     """
-    chipdesign dataset loader
-    -------------------------
+    Chip design dataset.
 
-    A PyTorch Geometric `InMemoryDataset`
-    wrapper for the Chip Design dataset used by the project. The dataset class is
-    responsible for downloading/unpacking the original archive (via
-    `helpers.download._download_and_unpack`), locating the preprocessed `.pth`
-    files, converting each example into a PyG `Data` object and caching a processed
-    `.pt` file for fast subsequent loading.
+    Note:
+        This class **should not be used directly**, please use :class:`graphbench.Loader` instead to access the provided
+        datasets.
+        The purpose of this page is merely to provide details on the dataset.
 
-    Usage notes:
-    - The dataset expects a directory structure where the archive unpacks into a
-        `raw/Data/` directory containing `train.pth`, `val.pth` and `test.pth` files.
-    - Instantiating the dataset will load a processed cache if available; otherwise
-        it will download/unpack and convert the raw files then write the processed
-        cache to `root/chipdesign/chipdesign/processed/<name>_<split>.pt`.
+
+    Overview:
+        We provide a graph-generation dataset for learning to synthesize Boolean circuits represented as
+        `and-inverter graphs <https://en.wikipedia.org/wiki/And-inverter_graph>`_ (AIGs).
+        Each graph is a directed acyclic graph (DAG) where internal nodes represent AND gates and edges represent
+        signal connections that may optionally invert their input.
+
+        Given a set of Boolean functions, specified by their truth tables, the task is to generate a logic circuit
+        that is functionally equivalent to the target function while minimizing the number of internal gates.
+
+        Performance is measured via an ad-hoc score that compares the size of the generated circuit against the size
+        of a reference AIG produced by the `ABC <https://people.eecs.berkeley.edu/~alanmi/abc/>`_ logic-synthesis tool,
+        and assigns a score of 0 to circuits that are not functionally equivalent to the target.
+        Please refer to the `GraphBench paper <https://arxiv.org/abs/2512.04475>`_ for details on the scoring metric.
+
+        The dataset contains a total of 1,200,000 graphs, each including a corresponding truth table with 6-8 inputs
+        and 1-2 outputs.
+        We recommend shuffling the dataset during training, as the graphs are sorted by the number of inputs and
+        outputs.
+
+
+    Splits:
+        We provide a fixed 80% / 10% / 10% split for training, validation, and testing.
+
+
+    Graph Attributes:
+        Each graph comes with the following attributes:
+
+        .. list-table::
+           :header-rows: 1
+
+           * - Attribute name
+             - Size
+             - Description
+           * - ``x``
+             - ``[num_nodes, 3]``
+             - Node features: A one-hot encoding of the gate type represented by the node (AND, INPUT, OUTPUT)
+           * - ``edge_attr``
+             - ``[num_edges, 1]``
+             - Inversion flag: 0 for a direct connection, 1 for a negated/inverted connection
+           * - ``num_inputs``
+             - ``[1]``
+             - The number of inputs to the logic function represented by the graph.
+           * - ``num_outputs``
+             - ``[1]``
+             - The number of outputs of the logic function represented by the graph.
+           * - ``sample_idx``
+             - ``[1]``
+             - The index of this instance in the dataset
+           * - ``truth_vectors``
+             - ``[num_outputs, 2 ** num_inputs]``
+             - The truth table of the logic function represented by the graph.
+
+
+    List of Available Datasets:
+        We currently provide a single dataset, called ``chipdesign``.
+
+        It can be loaded like this:
+
+        .. code:: python
+
+            from graphbench import Loader
+            dataset = Loader("data", "chipdesign").load()
     """
 
     def __init__(
