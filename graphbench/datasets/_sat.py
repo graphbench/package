@@ -128,7 +128,7 @@ class SATDataset(GraphDataset):
 
     Usage Notes:
         Currently, the loader defaults to using only small formula sizes.
-"""
+    """
 
     def __init__(
         self,
@@ -138,13 +138,10 @@ class SATDataset(GraphDataset):
         transform: Optional[Callable[[Data], Data]] = None,
         pre_transform: Optional[Callable[[Data], Data]] = None,
         pre_filter: Optional[Callable[[Data], bool]] = None,
-        generate: Optional[bool] = False,
-        use_satzilla_features: Optional[bool] =False,
+        use_satzilla_features: bool = False,
         cleanup_raw: bool = False,
         solver: Optional[str] = None,
-
-        # TODO: This should be removed in the future -- the user will download these files
-        load_preprocessed = False,):
+    ):
         """
         Args:
             name: Dataset identifier in the form ``sat_{graph_encoding}_{target}``, e.g. ``sat_lcg_as``.
@@ -153,13 +150,10 @@ class SATDataset(GraphDataset):
             transform: Optional PyG transform applied to data objects before every access.
             pre_transform: Optional PyG transform applied before saving data objects to disk.
             pre_filter: A function that indicates whether a data object should be included in the final dataset.
-            generate: If True, generate synthetic graphs instead of downloading.
             use_satzilla_features: If True, include SATZILLA features in the dataset.
             cleanup_raw: If True, remove raw files after processing.
             solver: Optional solver name to filter the dataset for a specific solver. If None, all solvers are included.
-            load_preprocessed: If True, load existing processed objects instead of regenerating.
         """
-
 
         #currently downloads everything at once for a single dataset. Up to the user to manually unpack it so far
 
@@ -195,22 +189,6 @@ class SATDataset(GraphDataset):
             raw_folder="sat_csv",
         )
         self.name_temp = name.replace("_"," ")
-        """
-        Initialize a SATDataset instance.
-
-        Parameters
-        - name (str): Dataset identifier, e.g. 'sat_vg_as'.
-        - split (str): One of 'train', 'val', 'test'.
-        - root (str|Path): Root dataset directory.
-        - use_satzilla_features (bool): Whether to include satzilla meta-features.
-        - generate (bool): If True, attempt to generate dataset programmatically (slow).
-
-        Behavior
-        The constructor will ensure supplementary CSVs are present (downloading
-        them if necessary), determine the dataset type and graph encoding, and
-        then attempt to load a cached processed file. If not found, call
-        `_prepare()` to build the dataset from raw files.
-        """
         csv_dir = Path(root) / self.SOURCE_CSV.raw_folder
         if not csv_dir.exists():
             print(f"Downloading supplementary CSV files to {csv_dir}...")
@@ -253,19 +231,17 @@ class SATDataset(GraphDataset):
             runs_all = self.instances_csv.merge(runs, on="filename")
             runs_all = runs_all.pivot_table(index="filename", columns="solver_name", values="time")
             self.order = runs_all.sum().sort_values().index.tolist()
-        
+
         self.name = name.lower()
         if self.name not in self.SOURCES:
             raise ValueError(f"Unsupported dataset name: {self.name}")
         assert split in ["train", "val", "test"], "Only 'train', 'val', 'test' splits are supported."
 
-
-        self.generate = generate
+        self.generate = False  # not implemented yet
         self.split = split
         self.source = self.SOURCES[self.name]
         self._logger = _logger
         self.cleanup_raw = cleanup_raw
-        self.load_preprocessed = load_preprocessed
 
         # paths
         self.sat_dir = Path(root) / "sat"
@@ -335,7 +311,6 @@ class SATDataset(GraphDataset):
         data.num_edges = len(edges[0]) if len(edges) > 0 else 0
         return data
 
-
     def _create_literal_clause_graph(self,clauses, n_vars):
         data = HeteroData()
         # data["literal"].x = torch.arange(0, n_vars * 2, dtype=torch.float).reshape(-1, 1)
@@ -370,7 +345,6 @@ class SATDataset(GraphDataset):
                 data["literal"].x[other_node_id, 4] += 1
                 data["literal"].x[node_id, 5] += 1  # degree
 
-            
             data["clause"].x[i, 2] = num_pos
             data["clause"].x[i, 3] = num_neg
             data["clause"].x[i, 4] = num_pos / (num_neg + 1e-6)
@@ -391,12 +365,10 @@ class SATDataset(GraphDataset):
             edge_attr, dtype=torch.float
         ).reshape(-1, 1)
 
-
         data.num_nodes = n_vars * 2 + len(clauses)
         data.num_edges = len(edges[0]) if len(edges) > 0 else 0
 
         return data
-
 
     def _create_variable_graph(self,clauses, n_vars):
         start = time.time()
@@ -445,7 +417,6 @@ class SATDataset(GraphDataset):
 
         return data
 
-
     def _create_clause_graph(self,clauses, n_vars):
         x = torch.zeros((len(clauses), 7), dtype=torch.float)
         start = time.time()
@@ -474,7 +445,7 @@ class SATDataset(GraphDataset):
                 if var not in clauses_for_lits:
                     clauses_for_lits[var] = []
                 clauses_for_lits[var].append(cid)
-            
+
             x[cid, 0] = num_pos
             x[cid, 1] = num_neg
             x[cid, 2] = num_pos / (num_neg + 1e-6)
@@ -492,7 +463,6 @@ class SATDataset(GraphDataset):
         data.num_edges = edge_index.size(1) if len(edges) > 0 else 0
 
         return data
-
 
     # function from https://github.com/zhaoyu-li/G4SATBench
     def _parse_cnf_file(self,file_path):
@@ -521,12 +491,9 @@ class SATDataset(GraphDataset):
 
         return n_vars, clauses
 
-
     def _process_file(self,instance, graph_type, pre_transform=None, homogeneous=True):
-    
         gc.collect()
         original_file_path = instance["raw_file_names"]
-
 
         n_vars, clauses = self._parse_cnf_file(original_file_path)
 
@@ -543,21 +510,20 @@ class SATDataset(GraphDataset):
         elif graph_type == "vg":
             data = self._create_variable_graph(clauses, n_vars)
 
-        
         try:
             to_undirected = T.ToUndirected()
             data = to_undirected(data)
         except Exception as e:
             print(f"Error making graph undirected: {e}")
             print(f"File: {original_file_path}")
-            
+
         if pre_transform is not None:
             data = pre_transform(data)
-        
+
         fs.torch_save(data, os.path.join(tempfile.gettempdir(), f"{instance['filename']}.pt"))
         # return data
 
-    def get(self, idx):
+    def get(self, idx: int) -> Data:
         data = super().get(idx)
 
         if (self.graph_type == "vcg" or self.graph_type == "lcg") and isinstance(data, HeteroData):
@@ -606,7 +572,6 @@ class SATDataset(GraphDataset):
 
             return data
 
-
     def _generate(self) -> None:
         futures = []
         #generate the corresponding sat dataset
@@ -632,10 +597,10 @@ class SATDataset(GraphDataset):
                     traceback.print_exc()
                     print("", flush=True)
                     raise e
-            
+
         print("Combining results...", flush=True)
         graphs = [fs.torch_load(os.path.join(tempfile.gettempdir(), f"{instance['filename']}.pt")) for _, instance in self.instances_csv.iterrows()]
-        
+
         return graphs 
 
     def _prepare(self) -> None:
@@ -681,13 +646,9 @@ class SATDataset(GraphDataset):
     # --- InMemoryDataset API (not used directly but kept for PyG hygiene) -----
 
     @property
-    def raw_file_names(self) -> List[str]:  # unused, we drive our own cache
+    def raw_file_names(self) -> list[str]:  # unused, we drive our own cache
         return []
 
     @property
-    def processed_file_names(self) -> List[str]:  # unused, we drive our own cache
+    def processed_file_names(self) -> list[str]:  # unused, we drive our own cache
         return ["data.pt"]
-
-    def process(self):
-        #self._prepare()
-        return 
