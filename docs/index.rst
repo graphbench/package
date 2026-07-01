@@ -32,14 +32,10 @@ Code Example
 
    # Setting up the components of graphbench
    evaluator = graphbench.Evaluator(dataset_name)
-   optimizer = graphbench.Optimizer(optimization_args, training_method)
    loader = graphbench.Loader(root, dataset_name, pre_filter, pre_transform, transform)
 
    # Load a GraphBench dataset and get splits
    dataset = loader.load()
-
-   # Optimize your model
-   opt_model = optimizer.optimize()
 
    # Use graphbench evaluator with targets y_true and predictions y_pred
    results = evaluator.evaluate(y_true, y_pred)
