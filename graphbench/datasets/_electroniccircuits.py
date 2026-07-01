@@ -142,7 +142,6 @@ class ECDataset(GraphDataset):
         transform: Optional[Callable[[Data], Data]] = None,
         pre_transform: Optional[Callable[[Data], Data]] = None,
         pre_filter: Optional[Callable[[Data], bool]] = None,
-        generate: Optional[bool] = False,
         cleanup_raw: bool = False,
         target_vout : Optional[float] = None,
         vout_norm_method : Optional[Literal["min-max", "reward", "IQR", "z-score"]] = "min-max",
@@ -155,7 +154,6 @@ class ECDataset(GraphDataset):
             transform: Optional PyG transform applied to data objects before every access.
             pre_transform: Optional PyG transform applied before saving data objects to disk.
             pre_filter: A function that indicates whether a data object should be included in the final dataset.
-            generate: If True, generate synthetic graphs instead of downloading.
             cleanup_raw: If True, remove raw files after processing.
             target_vout: Optional target value for vout normalization.
             vout_norm_method: Normalization method for vout labels.
@@ -199,7 +197,7 @@ class ECDataset(GraphDataset):
         self._target = self.target
         self._target_vout = target_vout
         self._vout_norm_method = vout_norm_method
-        self.generate = generate
+        self.generate = False  # not implemented yet
         self.split = split
         self.source = self.SOURCES[self.dataset_name]
         self._logger = _logger
