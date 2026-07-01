@@ -30,6 +30,7 @@ authors = [
 
 maintainers = [
   { name = "Timo Stoll", email = "timo.stoll@log.rwth-aachen.de" },
+  { name = "Arman Mielke", email = "arman.mielke@yahoo.de" },
 ]
 
 classifiers = [
@@ -70,12 +71,9 @@ where = ["."]
 include = ["graphbench*", "graphbench/*"]
 
 [tool.setuptools.package-data]
-graphbench = ["*.csv", "**/*.csv"]
+graphbench = ["*.csv", "**/*.csv", "py.typed"]
 
 [project.urls]
 homepage = "http://graphbench.io"
 repository = "https://github.com/graphbench/package"
 documentation = "https://graphbench.github.io/website/datasets"
-
-
-
