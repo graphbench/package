@@ -53,7 +53,9 @@ Further Information
 
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 2
    :caption: Contents
 
-   api/index
+   api/core
+   api/datasets
+   api/graphbench.helpers
