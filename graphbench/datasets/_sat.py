@@ -45,27 +45,37 @@ _logger = get_logger(__name__)
 
 class SATDataset(GraphDataset):
     r"""
-    Boolean Satisfiability (SAT) Solving datasets.
+    Boolean satisfiability (SAT) solving datasets.
 
     Note:
-        This class **should not be used directly**, please use :class:`graphbench.Loader` instead to access the provided datasets.
+        This class **should not be used directly**, please use :class:`graphbench.Loader` instead to access the
+        provided datasets.
         The purpose of this page is merely to provide details on the dataset.
 
         
     Overview:
-            The goal in this subdomain is not to directly solve SAT instances, as efficient solvers for this problem already exist.
-            However, a key property of modern SAT solvers is performance complementarity: no single solver dominates across all instances.
+            The goal in this subdomain is not to directly solve SAT instances, as efficient solvers for this problem
+            already exist.
+            However, a key property of modern SAT solvers is performance complementarity:
+            no single solver dominates across all instances.
             For this reason, we concentrate on two problem settings:
 
-            - **Performance Prediction (EPM)**: a regression problem whose goal is to predict the computation time of SAT solvers on unseen instances.
-            - **Algorithm Selection (AS)**: a multi-class classification problem that aims to select the best performing algorithm for a given SAT instance. 
+            - **Performance Prediction (EPM)**: a regression problem whose goal is to predict the computation time of
+              SAT solvers on unseen instances.
+            - **Algorithm Selection (AS)**: a multi-class classification problem that aims to select the best
+              performing algorithm for a given SAT instance.
 
-            The SAT datasets include formulae from diverse real-world applications and synthetically generated instances.
-            Each instance is represented through 3 graph representations, capturing structural views of SAT formulae:
+            The SAT datasets include formulae from diverse real-world applications and synthetically generated
+            instances.
+            Each formula in conjunctive normal form is represented through 3 graph representations, capturing
+            structural views of SAT formulae:
 
-            - **Variable-Clause Graph (VCG)**: a bipartite, undirected graph with a node for each variable and each clause, where an edge connects a variable to a clause if and only if the variable appears in that clause.
-            - **Clause Graph (LCG)**: an undirected graph with one node per clause, where two clauses are connected if they share at least one negated literal.
-            - **Variable Graph (VG)**: an undirected graph with one node per variable, where two variables are connected if they co-occur in at least one clause.
+            - **Variable-Clause Graph (VCG)**: a bipartite, undirected graph with a node for each variable and each
+              clause, where an edge connects a variable to a clause if and only if the variable appears in that clause.
+            - **Clause Graph (LCG)**: an undirected graph with one node per clause, where two clauses are connected if
+              they share at least one negated literal.
+            - **Variable Graph (VG)**: an undirected graph with one node per variable, where two variables are
+              connected if they co-occur in at least one clause.
 
             We provide the same dataset on 3 scales:
             
@@ -73,11 +83,17 @@ class SATDataset(GraphDataset):
             - Medium: contains all formulae with up to 20,000 variables and 80,000 clauses.
             - Large: includes all formulae 
 
-            In total, the dataset comprises over 100K problem instances (spanning from a few thousand to over 25M variables and 1.8B clauses). This results in 208,788 graphs ranging from 2 to 20,799 nodes and 2 to 4,109,936 edges.
+            In total, the dataset comprises over 100K problem instances (spanning from a few thousand to over 25M
+            variables and 1.8B clauses).
+            This results in 208,788 graphs ranging from 2 to 20,799 nodes and 2 to 4,109,936 edges.
 
-            Please refer to the `GraphBench paper <https://arxiv.org/abs/2512.04475>`__ for the exact parameters used for formula generation, dataset selection, and solver configurations.
+            Please refer to the `GraphBench paper <https://arxiv.org/abs/2512.04475>`_ for the exact parameters used
+            for formula generation, dataset selection, and solver configurations.
+
+
     Splits:
         The SAT solving datasets use a fixed 80% / 10% / 10% split for training, validation, and testing.
+
 
     Graph Attributes:
         Each graph has the following attributes:
@@ -90,7 +106,7 @@ class SATDataset(GraphDataset):
              - Description
            * - ``x``
              - ``[num_nodes, 12]``
-             - Node features for the SAT graph.
+             - Hand-crafted node features. See the `GraphBench paper <https://arxiv.org/abs/2512.04475>`_ for details.
            * - ``y``
              - **EPM**: ``[1]`` 
 
@@ -98,6 +114,7 @@ class SATDataset(GraphDataset):
              - **EPM**: Runtime of the selected solver. 
 
                **AS**: Target vector over 11 solvers.
+
 
     List of Available Datasets:
         We provide one dataset for each combination of graph encoding and task target.
@@ -126,8 +143,9 @@ class SATDataset(GraphDataset):
         
         In addition to this, we provide ``sat`` as a convenience identifier to load all of the above datasets.
 
+
     Usage Notes:
-        Currently, the loader defaults to using only small formula sizes.
+        Currently, the loader defaults to using only small formula sizes, for a total of 69,596 instances.
     """
 
     def __init__(
