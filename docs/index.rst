@@ -9,9 +9,10 @@ GraphBench: Next-generation graph learning benchmarking
 =======================================================
 
 We present *GraphBench*, a comprehensive graph learning benchmark across domains and prediction regimes.
-GraphBench standardizes evaluation with consistent splits, metrics, and out-of-distribution checks, and includes a
-unified hyperparameter tuning framework.
-We also provide strong baselines with state-of-the-art message-passing and graph transformer models to get you started.
+GraphBench standardizes evaluation with consistent splits, metrics, and out-of-distribution checks.
+
+Get started by taking a look at the :doc:`Loader <api/graphbench.loader>` class,
+as well as the dataset page you're interested in under :doc:`Datasets <api/datasets>`.
 
 
 
@@ -39,7 +40,6 @@ Code Example
 
    # Use graphbench evaluator with targets y_true and predictions y_pred
    results = evaluator.evaluate(y_true, y_pred)
-
 
 
 
