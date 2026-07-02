@@ -303,7 +303,8 @@ class BlueSkyDataset(GraphDataset):
             cleanup_raw: If True, remove raw files after processing.
             load_preprocessed: If True, load existing processed objects instead of regenerating.
             feature_file_name: Path to torch file containing `dict[user_id] -> list[(ts, Tensor)]`.
-            empty_emb_file_name: Path to a torch Tensor used as the "empty" embedding.
+            empty_emb_file_name: Path to a torch Tensor used as the "empty" string embedding
+                                 (used to derive aggregated node features).
             target_file_name: Path to torch file containing `dict[user_id] -> list[(ts, likes, replies, reposts)]`.
         """
         self.name = name.lower()
