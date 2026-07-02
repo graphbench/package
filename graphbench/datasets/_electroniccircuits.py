@@ -24,7 +24,7 @@ _logger = get_logger(__name__)
 
 class ECDataset(GraphDataset):
     r"""
-    Electronic Circuits (EC) datasets.
+    Electronic circuits (EC) datasets.
 
     Note:
         This class **should not be used directly**, please use :class:`graphbench.Loader` instead to access the provided

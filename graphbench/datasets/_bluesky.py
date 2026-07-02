@@ -146,7 +146,7 @@ def _add_edge_time(df: pd.DataFrame, format='%Y%m%d%H%M', index=2) -> Tuple[Tens
 
 class BlueSkyDataset(GraphDataset):
     r"""
-    Social Networks (BlueSky) datasets.
+    Social networks (BlueSky) datasets.
 
     Note:
         This class **should not be used directly**, please use :class:`graphbench.Loader` instead to access the provided

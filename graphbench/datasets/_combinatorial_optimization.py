@@ -40,7 +40,7 @@ _logger = get_logger(__name__)
 
 class CODataset(GraphDataset):
     r"""
-    Combinatorial Optimization (CO) datasets.
+    Combinatorial optimization (CO) datasets.
 
     Note:
         This class **should only be used directly when generating new datasets**.
