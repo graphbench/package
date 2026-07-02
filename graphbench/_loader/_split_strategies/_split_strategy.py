@@ -1,11 +1,11 @@
 from abc import ABC, abstractmethod
-from typing import Callable, Dict, Literal, Optional, TypeAlias
+from typing import Callable, Literal, Optional, TypeAlias
 
 from torch_geometric.data import InMemoryDataset
 
 
 DatasetFactory: TypeAlias = Callable[[str, str, Optional[str]], InMemoryDataset]
-TrainValTestSet: TypeAlias = Dict[Literal["train", "val", "test"], InMemoryDataset]
+TrainValTestSet: TypeAlias = dict[Literal["train", "val", "test"], InMemoryDataset]
 
 
 class SplitStrategy(ABC):

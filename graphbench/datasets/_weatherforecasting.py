@@ -44,22 +44,28 @@ class WeatherforecastingDataset(GraphDataset):
         We use a down-sampled version of ERA5 with a ``64 x 32`` equiangular grid and a temporal resolution of six
         hours.
 
-        The dataset combines two structures into a single graph:
-
-        - A **grid graph** of ``2,048`` nodes, where each node corresponds to one grid cell and stores the atmospheric
-          state at that location.
-        - An **icosahedron mesh graph** of ``2,562`` nodes spanning the globe, on which message passing is performed.
-
-        Each grid node is connected by a directed edge to one of the icosahedron mesh nodes; together this yields a
-        single graph with ``4,610`` nodes and ``59,667`` edges.
-        Each grid node carries 5 surface variables and 6 atmospheric variables defined across 13 pressure levels
-        (50 hPa to 1,000 hPa), for a total of ``83`` input channels per grid node.
-
-        The task is to model medium-range weather evolution by predicting the *residual* change in the atmospheric
+        The task is to model medium-range weather evolution by predicting the residual change in the atmospheric
         state over a fixed 12-hour horizon.
-        Following `GraphCast <https://www.science.org/doi/10.1126/science.adi2336>`__, the model ingests the current
-        atmospheric state, maps it to the icosahedron mesh, performs several rounds of message passing, and maps the
-        result back to the grid; the predicted residual is added to the input to obtain the 12-hour-ahead state.
+        Given an initial snapshot of the current atmospheric state, the model forecasts the 12-hour future change
+        in meteorological variables at each grid location.
+
+
+    Graph Attributes:
+        .. list-table::
+           :header-rows: 1
+
+           * - Attribute
+             - Size
+             - Description
+           * - ``x``
+             - ``[num_nodes, 83]``
+             - Node features: weather variables across all pressure levels for each grid coordinate.
+           * - .
+             - ``[num_nodes, 83]``
+             - Target: the atmospheric state at a future timestep 12 hours later.
+
+        Please refer to the `GraphBench paper <https://arxiv.org/abs/2512.04475>`_ for a detailed list of the weather
+        variables included in the dataset.
 
 
     List of Available Datasets:
