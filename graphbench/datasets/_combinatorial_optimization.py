@@ -294,7 +294,6 @@ class CODataset(GraphDataset):
         download_and_unpack(
             source=self.source,
             raw_dir=self._raw_dir,
-            processed_dir=self.processed_path,
             logger=_logger,
         )
 
@@ -303,6 +302,8 @@ class CODataset(GraphDataset):
             return self._generate()
 
         filepaths = self._find_matching_files(task=self.dataset_name, directory=self._raw_dir)
+        if not filepaths:
+            raise FileNotFoundError(f"No matching raw dataset files found in {self._raw_dir}")
         self.load(filepaths[0])
 
         return [self.get(i) for i in range(len(self))]
@@ -311,11 +312,22 @@ class CODataset(GraphDataset):
         """
         Returns a list of filenames matching the convention in the directory.
         """
-        return [str(self.processed_path)]
-    
-    def process(self):
-        self._prepare()
-        
+        directory = Path(directory)
+        if not directory.exists():
+            return []
+
+        matches = sorted(
+            str(path)
+            for path in directory.rglob("data.pt")
+            if path.is_file()
+        )
+        return matches
+
+    # NOTE: deliberately no `process()` override. PyG only runs its `_process()`
+    # hook for classes that define one, and it does so from `__init__` *before*
+    # `_load_cached_or_prepare` can check the processed cache -- which made every
+    # load re-download the raw archive. `_prepare()` is already called on a cache
+    # miss, so let PyG skip `_process()` as it does for the other datasets.
 
     @property
     def raw_file_names(self) -> list[str]:

@@ -1,3 +1,4 @@
+import shutil
 from pathlib import Path
 from abc import ABC, abstractmethod
 
@@ -16,17 +17,10 @@ class GraphDataset(InMemoryDataset, ABC):
         if logger is not None:
             logger.info(f"Cleaning up: {raw_dir}")
 
-        # remove only the dataset-specific temp folder
-        for path in sorted(raw_dir.rglob("*"), reverse=True):
-            try:
-                path.unlink()
-            except (IsADirectoryError, PermissionError):
-                pass
-
-        try:
-            raw_dir.rmdir()
-        except OSError:
-            pass
+        if raw_dir.is_dir():
+            shutil.rmtree(raw_dir, ignore_errors=False)
+        else:
+            raw_dir.unlink()
 
     @abstractmethod
     def _prepare(self) -> None:
@@ -79,6 +73,8 @@ class GraphDataset(InMemoryDataset, ABC):
                 if logger is not None:
                     logger.info(f"Loading cached processed data: {processed_path}")
                 self.load(resolved_load_path)
+                if cleanup_raw:
+                    self._cleanup()
                 return
             except Exception as e:
                 if logger is not None:

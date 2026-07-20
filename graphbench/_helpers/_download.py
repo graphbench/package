@@ -17,33 +17,43 @@ class SourceSpec:
     raw_folder: str  # folder name inside tmp/ where data will appear
 
 
-def download_and_unpack(source: SourceSpec, raw_dir: Union[str, Path], processed_dir: Union[str, Path], logger) -> None:
+class IncompleteDownloadError(IOError):
+    """Raised when a response body is shorter than its declared Content-Length."""
+
+
+def _is_unpacked(raw_dir: Path, archive_name: str) -> bool:
+    """True if `raw_dir` already holds unpacked data.
+    """
+    if not raw_dir.exists():
+        return False
+    return any(p.name != archive_name for p in raw_dir.iterdir())
+
+
+def download_and_unpack(source: SourceSpec, raw_dir: Union[str, Path], logger) -> None:
     raw_dir = Path(raw_dir)
-    raw_dir.mkdir(parents=True, exist_ok=True)
     url = source.url
     filename = url.split("/")[-1]
     local_path = raw_dir / filename
-    # local_path = raw_dir / "data_small_vg_no_trans.pt.xz"
-    processed_dir = Path(processed_dir)
-    # Some dataset loaders pass a file path. Treat it as a directory check.
-    processed_dir_check = processed_dir.parent if processed_dir.suffix else processed_dir
-    if not processed_dir_check.exists() or not any(processed_dir_check.iterdir()):
-        # the directory doesn’t exist or it exists but is empty (or the processed dir is missing/empty)
-        _stream_download(url, local_path, logger)
-        if local_path.suffixes[-2:] == [".pt",".xz"]:
-            _unpack_xz(local_path, dest_dir=raw_dir)
-        elif local_path.suffixes[-2:] == [".tar", ".gz"]:
-            _safe_extract_tar(local_path, raw_dir)
-            _gunzip_in_tree(raw_dir)  # also handles nested .gz
-        elif local_path.suffix == ".gz":
-            _gunzip_file(local_path)
-        elif local_path.suffix == ".zip":
-            _unpack_zip(local_path, dest_dir=raw_dir)
-        else:
-            logger.warning(f"Unknown archive type for {local_path}; leaving as-is.")
-        print(f"Downloaded and unpacked data to {raw_dir}")
-    else:
+
+    # Decide against the raw dir, not the processed dir
+    if _is_unpacked(raw_dir, filename):
         logger.info(f"Found existing download dir: {raw_dir}")
+        return
+
+    raw_dir.mkdir(parents=True, exist_ok=True)
+    _stream_download(url, local_path, logger)
+    if local_path.suffixes[-2:] == [".pt",".xz"]:
+        _unpack_xz(local_path, dest_dir=raw_dir)
+    elif local_path.suffixes[-2:] == [".tar", ".gz"]:
+        _safe_extract_tar(local_path, raw_dir)
+        _gunzip_in_tree(raw_dir)  # also handles nested .gz
+    elif local_path.suffix == ".gz":
+        _gunzip_file(local_path)
+    elif local_path.suffix == ".zip":
+        _unpack_zip(local_path, dest_dir=raw_dir)
+    else:
+        logger.warning(f"Unknown archive type for {local_path}; leaving as-is.")
+    print(f"Downloaded and unpacked data to {raw_dir}")
 
 def _stream_download(
     url: str,
@@ -75,12 +85,26 @@ def _stream_download(
                     continue
 
                 r.raise_for_status()
+                expected = _expected_length(r)
+                written = 0
                 with open(dest, "wb") as f:
                     for chunk in r.iter_content(chunk_size=chunk_size):
                         if chunk:
                             f.write(chunk)
+                            written += len(chunk)
+
+                # A server that closes the connection early ends iter_content
+                # without raising, which would silently leave a truncated
+                # archive on disk and fail much later.
+                if expected is not None and written != expected:
+                    raise IncompleteDownloadError(
+                        f"Truncated download: got {written} of {expected} bytes from {url}"
+                    )
                 return
-        except requests.RequestException as exc:  # includes timeouts and connection errors
+        except (requests.RequestException, IncompleteDownloadError) as exc:
+            # Don't leave a partial file behind: it is useless and would be
+            # mistaken for a real archive by anything inspecting the raw dir.
+            dest.unlink(missing_ok=True)
             if attempt == max_retries:
                 raise
             logger.warning(
@@ -91,6 +115,13 @@ def _stream_download(
                 cooldown_seconds,
             )
             time.sleep(cooldown_seconds)
+
+
+def _expected_length(response) -> Optional[int]:
+    if response.headers.get("Content-Encoding"):
+        return None
+    content_length = response.headers.get("Content-Length")
+    return int(content_length) if content_length is not None else None
 
 def _safe_extract_tar(path: Path, dest_dir: Path) -> None:
     """Extract tar.gz safely (prevents path traversal)."""

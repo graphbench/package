@@ -82,6 +82,10 @@ class Loader():
         self.sat_solver = sat_solver
         self.use_satzilla_features = use_satzilla_features
         self.generate = False
+        # Datasets built for the dataset currently being assembled. Splits of one
+        # dataset share a raw dir, so raw cleanup is deferred until all of them
+        # are built (see `_loader`).
+        self._built_datasets: List[InMemoryDataset] = []
 
         if self.generate_fallback:
             self.generate = True
@@ -191,7 +195,31 @@ class Loader():
         return self.data_list
         
     def _loader(self, dataset_name: str) -> TrainValTestSet:
-        return self._registry.build(dataset_name)
+        self._built_datasets = []
+        try:
+            datasets = self._registry.build(dataset_name)
+        finally:
+            # Every split of a dataset reads from the same raw dir, so cleaning
+            # it up per split would delete the archive the next split still
+            # needs, forcing a fresh download each time. Clean up once, after
+            # the whole split set is built.
+            self._cleanup_raw_dirs()
+        return datasets
+
+    def _track(self, dataset: InMemoryDataset) -> InMemoryDataset:
+        """Register a dataset whose raw dir should be cleaned up after the build."""
+        self._built_datasets.append(dataset)
+        return dataset
+
+    def _cleanup_raw_dirs(self) -> None:
+        datasets, self._built_datasets = self._built_datasets, []
+        cleaned: set[str] = set()
+        for dataset in datasets:
+            raw_dir = getattr(dataset, "_raw_dir", None)
+            if raw_dir is None or str(raw_dir) in cleaned:
+                continue
+            cleaned.add(str(raw_dir))
+            dataset._cleanup()
 
     def _make_algoreas_dataset(
         self,
@@ -201,13 +229,16 @@ class Loader():
     ) -> InMemoryDataset:
         from graphbench.datasets import AlgoReasDataset
 
-        return AlgoReasDataset(
-            root=self.root,
-            name=name_override or dataset_name,
-            pre_filter=self.pre_filter,
-            pre_transform=self.pre_transform,
-            transform=self.transform,
-            split=split,
+        return self._track(
+            AlgoReasDataset(
+                root=self.root,
+                name=name_override or dataset_name,
+                pre_filter=self.pre_filter,
+                pre_transform=self.pre_transform,
+                transform=self.transform,
+                split=split,
+                cleanup_raw=False,
+            )
         )
 
     def _make_bluesky_dataset(
@@ -218,15 +249,17 @@ class Loader():
     ) -> InMemoryDataset:
         from graphbench.datasets import BlueSkyDataset
 
-        return BlueSkyDataset(
-            root=self.root,
-            name=name_override or dataset_name,
-            pre_filter=self.pre_filter,
-            pre_transform=self.pre_transform,
-            transform=self.transform,
-            split=split,
-            cleanup_raw=False,
-            load_preprocessed=True,
+        return self._track(
+            BlueSkyDataset(
+                root=self.root,
+                name=name_override or dataset_name,
+                pre_filter=self.pre_filter,
+                pre_transform=self.pre_transform,
+                transform=self.transform,
+                split=split,
+                load_preprocessed=True,
+                cleanup_raw=False,
+            )
         )
 
     def _make_chipdesign_dataset(
@@ -237,13 +270,16 @@ class Loader():
     ) -> InMemoryDataset:
         from graphbench.datasets import ChipDesignDataset
 
-        return ChipDesignDataset(
-            root=self.root,
-            name=name_override or dataset_name,
-            pre_filter=self.pre_filter,
-            pre_transform=self.pre_transform,
-            transform=self.transform,
-            split=split,
+        return self._track(
+            ChipDesignDataset(
+                root=self.root,
+                name=name_override or dataset_name,
+                pre_filter=self.pre_filter,
+                pre_transform=self.pre_transform,
+                transform=self.transform,
+                split=split,
+                cleanup_raw=False,
+            )
         )
 
     def _make_weather_dataset(
@@ -278,14 +314,17 @@ class Loader():
     ) -> InMemoryDataset:
         from graphbench.datasets import CODataset
 
-        return CODataset(
-            root=self.root,
-            name=name_override or dataset_name,
-            pre_filter=self.pre_filter,
-            pre_transform=self.pre_transform,
-            transform=self.transform,
-            split=split,
-            generate=self.generate,
+        return self._track(
+            CODataset(
+                root=self.root,
+                name=name_override or dataset_name,
+                pre_filter=self.pre_filter,
+                pre_transform=self.pre_transform,
+                transform=self.transform,
+                split=split,
+                generate=self.generate,
+                cleanup_raw=False,
+            )
         )
 
     def _make_sat_dataset(
@@ -296,15 +335,18 @@ class Loader():
     ) -> InMemoryDataset:
         from graphbench.datasets import SATDataset
 
-        return SATDataset(
-            root=self.root,
-            name=name_override or dataset_name,
-            pre_filter=self.pre_filter,
-            pre_transform=self.pre_transform,
-            transform=self.transform,
-            split=split,
-            solver=self.sat_solver,
-            use_satzilla_features=self.use_satzilla_features,
+        return self._track(
+            SATDataset(
+                root=self.root,
+                name=name_override or dataset_name,
+                pre_filter=self.pre_filter,
+                pre_transform=self.pre_transform,
+                transform=self.transform,
+                split=split,
+                solver=self.sat_solver,
+                use_satzilla_features=self.use_satzilla_features,
+                cleanup_raw=False,
+            )
         )
 
     def _make_ec_dataset(
@@ -315,13 +357,16 @@ class Loader():
     ) -> InMemoryDataset:
         from graphbench.datasets import ECDataset
 
-        return ECDataset(
-            root=self.root,
-            name=name_override or dataset_name,
-            pre_filter=self.pre_filter,
-            pre_transform=self.pre_transform,
-            transform=self.transform,
-            split=split,
+        return self._track(
+            ECDataset(
+                root=self.root,
+                name=name_override or dataset_name,
+                pre_filter=self.pre_filter,
+                pre_transform=self.pre_transform,
+                transform=self.transform,
+                split=split,
+                cleanup_raw=False,
+            )
         )
 
 

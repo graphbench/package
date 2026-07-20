@@ -213,7 +213,6 @@ class SATDataset(GraphDataset):
             download_and_unpack(
                 source=self.SOURCE_CSV,
                 raw_dir=csv_dir,
-                processed_dir=csv_dir / "processed",
                 logger=_logger,
             )
         self.solver = solver
@@ -632,7 +631,6 @@ class SATDataset(GraphDataset):
         download_and_unpack(
             source=self.source,
             raw_dir=self._raw_dir,
-            processed_dir=self.processed_path,
             logger=_logger,
         )
 
